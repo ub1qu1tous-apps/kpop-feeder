@@ -10,6 +10,7 @@ building the real thing.
 import json
 import re
 from pathlib import Path
+from urllib.parse import quote
 
 import feedparser
 
@@ -62,5 +63,30 @@ def main():
         print(f"  -> {matched_count}/{len(parsed.entries)} entries matched a tracked group")
 
 
+def test_news_aggregators():
+    """
+    Per-group search against news aggregators, instead of fetching a
+    generic feed and filtering titles ourselves. The aggregator does the
+    fetching from many outlets (including ones that block us directly,
+    like allkpop) and hands back only matching results.
+    """
+    for group_key, group in GROUPS.items():
+        query = quote(f'"{group["display_name"]}" kpop')
+        google_url = f"https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+        bing_url = f"https://www.bing.com/news/search?q={query}&format=RSS"
+
+        for agg_name, url in [("google_news", google_url), ("bing_news", bing_url)]:
+            print(f"\n=== {agg_name}: {group_key} ({url}) ===")
+            parsed = feedparser.parse(url)
+            if parsed.bozo and not parsed.entries:
+                print(f"  FAILED (http status={parsed.get('status')}): {parsed.bozo_exception}")
+                continue
+            print(f"  {len(parsed.entries)} entries")
+            for entry in parsed.entries[:10]:
+                print(f"  - {entry.get('title', '')}")
+                print(f"      {entry.get('link', '')}")
+
+
 if __name__ == "__main__":
     main()
+    test_news_aggregators()
