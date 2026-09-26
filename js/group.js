@@ -28,7 +28,7 @@ async function init() {
 
   const { data: group, error } = await supabaseClient
     .from("groups")
-    .select("display_name, search_patterns, last_refreshed_at")
+    .select("display_name, members, last_refreshed_at")
     .eq("key", groupKey)
     .maybeSingle();
 
@@ -38,8 +38,7 @@ async function init() {
   }
 
   titleEl.textContent = group.display_name;
-  const members = (group.search_patterns || []).filter((p) => p !== group.display_name);
-  document.getElementById("group-members").textContent = members.join(", ");
+  document.getElementById("group-members").textContent = (group.members || []).join(", ");
   lastRefreshedAt = group.last_refreshed_at ? new Date(group.last_refreshed_at) : null;
   updateCooldownUI();
   cooldownTimer = setInterval(updateCooldownUI, 15000);

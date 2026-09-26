@@ -89,6 +89,7 @@ document.getElementById("add-group-form").addEventListener("submit", async (e) =
     key,
     display_name: displayName,
     search_patterns: [displayName, ...extraTerms],
+    members: extraTerms,
     is_regex: false,
   });
 
@@ -174,7 +175,7 @@ async function loadManageGroups() {
   const container = document.getElementById("manage-groups");
   const { data: groups, error } = await supabaseClient
     .from("groups")
-    .select("key, display_name, search_patterns, last_refreshed_at")
+    .select("key, display_name, members, search_patterns, last_refreshed_at")
     .order("display_name", { ascending: true });
 
   if (error || !groups) {
@@ -188,13 +189,13 @@ async function loadManageGroups() {
 
   container.innerHTML = groups
     .map((g, i) => {
-      const extraTerms = (g.search_patterns || []).filter((p) => p !== g.display_name).join(", ");
+      const membersStr = (g.members || []).join(", ");
       const count = counts[i].count ?? 0;
       const lastRefreshed = g.last_refreshed_at ? relativeTime(new Date(g.last_refreshed_at)) : "never";
       return `
-        <div class="manage-row" data-key="${escapeHtml(g.key)}">
+        <div class="manage-row" data-key="${escapeHtml(g.key)}" data-patterns='${escapeHtml(JSON.stringify(g.search_patterns || []))}'>
           <input type="text" class="mg-display-name" value="${escapeHtml(g.display_name)}" />
-          <input type="text" class="mg-extra-terms" value="${escapeHtml(extraTerms)}" placeholder="extra search terms, comma-separated" />
+          <input type="text" class="mg-extra-terms" value="${escapeHtml(membersStr)}" placeholder="members, comma-separated" />
           <div class="hint">${count} articles &middot; last refreshed ${lastRefreshed}</div>
           <div class="manage-row-actions">
             <button class="mg-save">Save</button>
@@ -217,7 +218,7 @@ async function saveGroup(row, key) {
   errorEl.textContent = "";
 
   const displayName = row.querySelector(".mg-display-name").value.trim();
-  const extraTerms = row
+  const members = row
     .querySelector(".mg-extra-terms")
     .value.split(",")
     .map((t) => t.trim())
@@ -228,9 +229,22 @@ async function saveGroup(row, key) {
     return;
   }
 
+  // search_patterns is used for matching and may hold legacy aliases/
+  // regex fragments -- only add newly-typed members to it, never remove
+  // existing entries, so editing the members list here can't break
+  // matching that was already working.
+  let existingPatterns = [];
+  try {
+    existingPatterns = JSON.parse(row.dataset.patterns || "[]");
+  } catch {
+    existingPatterns = [displayName];
+  }
+  const existingLower = new Set(existingPatterns.map((p) => p.toLowerCase()));
+  const mergedPatterns = [...existingPatterns, ...members.filter((m) => !existingLower.has(m.toLowerCase()))];
+
   const { error } = await supabaseClient
     .from("groups")
-    .update({ display_name: displayName, search_patterns: [displayName, ...extraTerms] })
+    .update({ display_name: displayName, members, search_patterns: mergedPatterns })
     .eq("key", key);
 
   if (error) {
