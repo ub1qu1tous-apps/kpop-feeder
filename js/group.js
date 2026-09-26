@@ -13,6 +13,7 @@ const refreshBtn = document.getElementById("refresh-btn");
 const limitSelect = document.getElementById("limit-select");
 const dateFrom = document.getElementById("date-from");
 const dateTo = document.getElementById("date-to");
+const keywordInput = document.getElementById("keyword-input");
 
 if (!groupKey) {
   titleEl.textContent = "No group specified";
@@ -44,7 +45,11 @@ async function init() {
   document.getElementById("clear-btn").addEventListener("click", () => {
     dateFrom.value = "";
     dateTo.value = "";
+    keywordInput.value = "";
     loadArticles();
+  });
+  keywordInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loadArticles();
   });
   refreshBtn.addEventListener("click", onRefreshClick);
 }
@@ -61,6 +66,9 @@ async function loadArticles() {
 
   if (dateFrom.value) query = query.gte("published_at", `${dateFrom.value}T00:00:00Z`);
   if (dateTo.value) query = query.lte("published_at", `${dateTo.value}T23:59:59Z`);
+
+  const keyword = keywordInput.value.trim();
+  if (keyword) query = query.ilike("title", `%${keyword}%`);
 
   const { data, error } = await query;
 
