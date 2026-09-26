@@ -14,9 +14,18 @@ from pathlib import Path
 import feedparser
 
 SOURCES = {
-    "allkpop": "https://www.allkpop.com/rss.xml",
     "soompi": "https://www.soompi.com/feed",
     "koreaboo": "https://www.koreaboo.com/feed/",
+    "kpopmap": "https://www.kpopmap.com/feed/",
+    "hellokpop": "https://www.hellokpop.com/feed/",
+    "koreaportal": "https://www.koreaportal.com/rss",
+    "whatthekpop": "https://www.whatthekpop.com/feed/",
+    # allkpop's real feed URL is unconfirmed -- trying several candidates
+    # to see which one (if any) actually parses.
+    "allkpop_candidate_rss_xml": "https://www.allkpop.com/rss.xml",
+    "allkpop_candidate_feed": "https://www.allkpop.com/feed",
+    "allkpop_candidate_feed_slash": "https://www.allkpop.com/feed/",
+    "allkpop_candidate_rss": "https://www.allkpop.com/rss",
 }
 
 GROUPS = json.loads((Path(__file__).parent / "groups.json").read_text())
@@ -39,7 +48,7 @@ def main():
         parsed = feedparser.parse(url)
 
         if parsed.bozo and not parsed.entries:
-            print(f"  FAILED to fetch/parse: {parsed.bozo_exception}")
+            print(f"  FAILED to fetch/parse (http status={parsed.get('status')}): {parsed.bozo_exception}")
             continue
 
         print(f"  {len(parsed.entries)} entries fetched")
