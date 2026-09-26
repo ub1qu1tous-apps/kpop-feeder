@@ -48,8 +48,9 @@ async function init() {
     keywordInput.value = "";
     loadArticles();
   });
-  keywordInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") loadArticles();
+  document.getElementById("keyword-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    loadArticles();
   });
   refreshBtn.addEventListener("click", onRefreshClick);
 }

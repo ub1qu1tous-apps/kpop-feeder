@@ -134,7 +134,14 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+
+.icon-btn {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  padding: 10px 14px;
 }
 
 .article-list {
