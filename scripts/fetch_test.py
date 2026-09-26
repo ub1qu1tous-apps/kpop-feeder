@@ -13,19 +13,22 @@ from pathlib import Path
 
 import feedparser
 
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
+
 SOURCES = {
     "soompi": "https://www.soompi.com/feed",
     "koreaboo": "https://www.koreaboo.com/feed/",
     "kpopmap": "https://www.kpopmap.com/feed/",
     "hellokpop": "https://www.hellokpop.com/feed/",
-    "koreaportal": "https://www.koreaportal.com/rss",
-    "whatthekpop": "https://www.whatthekpop.com/feed/",
-    # allkpop's real feed URL is unconfirmed -- trying several candidates
-    # to see which one (if any) actually parses.
+    # dropped: koreaportal (/rss -> 404) and whatthekpop (domain doesn't
+    # resolve -- bad guess). Re-add once real feed URLs are confirmed.
+    "koreaportal_candidate_feed": "https://www.koreaportal.com/feed/",
+    # allkpop's default guesses got a 403 (bot-protection) -- retrying
+    # with a browser-like User-Agent.
     "allkpop_candidate_rss_xml": "https://www.allkpop.com/rss.xml",
-    "allkpop_candidate_feed": "https://www.allkpop.com/feed",
-    "allkpop_candidate_feed_slash": "https://www.allkpop.com/feed/",
-    "allkpop_candidate_rss": "https://www.allkpop.com/rss",
 }
 
 GROUPS = json.loads((Path(__file__).parent / "groups.json").read_text())
@@ -45,7 +48,7 @@ MATCHERS = {key: compile_matcher(g) for key, g in GROUPS.items()}
 def main():
     for source_name, url in SOURCES.items():
         print(f"\n=== {source_name} ({url}) ===")
-        parsed = feedparser.parse(url)
+        parsed = feedparser.parse(url, agent=USER_AGENT)
 
         if parsed.bozo and not parsed.entries:
             print(f"  FAILED to fetch/parse (http status={parsed.get('status')}): {parsed.bozo_exception}")
