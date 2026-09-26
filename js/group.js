@@ -5,6 +5,7 @@ const groupKey = params.get("g");
 
 let lastRefreshedAt = null; // Date or null
 let cooldownTimer = null;
+let isAdmin = false;
 
 const titleEl = document.getElementById("group-title");
 const listEl = document.getElementById("article-list");
@@ -22,6 +23,9 @@ if (!groupKey) {
 }
 
 async function init() {
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  isAdmin = !!sessionData.session;
+
   const { data: group, error } = await supabaseClient
     .from("groups")
     .select("display_name, last_refreshed_at")
@@ -59,7 +63,7 @@ async function loadArticles() {
   const limit = parseInt(limitSelect.value, 10);
   let query = supabaseClient
     .from("articles")
-    .select("title, url, source, publisher, published_at")
+    .select("id, title, url, source, publisher, published_at")
     .eq("group_key", groupKey)
     .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false })
@@ -91,14 +95,25 @@ async function loadArticles() {
       });
       const pubName = a.publisher || a.source;
       const tier = classifyPublisher(a.publisher);
+      const deleteBtn = isAdmin ? `<button class="article-delete" data-id="${a.id}" aria-label="Delete">&times;</button>` : "";
       return `<li>
         <a href="${escapeAttr(a.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(a.title)}</a>
         <div class="article-meta">
-          <span class="pub-badge pub-${tier}">${escapeHtml(pubName)}</span> &middot; ${date}
+          <span class="pub-badge pub-${tier}">${escapeHtml(pubName)}</span> &middot; ${date} ${deleteBtn}
         </div>
       </li>`;
     })
     .join("");
+
+  if (isAdmin) {
+    listEl.querySelectorAll(".article-delete").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Delete this article?")) return;
+        await supabaseClient.from("articles").delete().eq("id", btn.dataset.id);
+        loadArticles();
+      });
+    });
+  }
 }
 
 // Reliability color-coding for the publisher badge: green = mainstream

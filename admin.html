@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>kpop-feeder admin</title>
-  <link rel="stylesheet" href="css/style.css?v=2" />
+  <link rel="stylesheet" href="css/style.css?v=3" />
 </head>
 <body>
   <div class="wrap">
@@ -31,6 +31,22 @@
       <p class="error-text" id="add-error"></p>
       <p class="success-text" id="add-success"></p>
     </form>
+
+    <h1>Status</h1>
+    <div id="status-panel" class="admin-panel">
+      <p class="hint">Loading...</p>
+    </div>
+
+    <div class="refresh-row">
+      <button id="trigger-all-btn" class="primary">Fetch all groups now</button>
+      <span class="hint">may take a minute or two</span>
+    </div>
+    <p class="status-line" id="trigger-all-status"></p>
+
+    <h1>Manage groups</h1>
+    <div id="manage-groups" class="admin-panel">
+      <p class="hint">Loading...</p>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

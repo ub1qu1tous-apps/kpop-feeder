@@ -213,6 +213,18 @@ button:disabled {
   margin-right: 6px;
 }
 
+.article-delete {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 4px;
+  float: right;
+}
+
+.article-delete:hover { color: var(--accent); }
+
 .empty {
   color: var(--muted);
   padding: 24px 0;
@@ -253,3 +265,38 @@ form.stacked input {
 
 .error-text { color: var(--accent); font-size: 0.85rem; }
 .success-text { color: #6fd08c; font-size: 0.85rem; }
+
+.admin-panel {
+  margin: 10px 0 28px;
+}
+
+.manage-row {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manage-row input {
+  font: inherit;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+.manage-row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.manage-row-actions .mg-delete {
+  color: var(--accent);
+  border-color: rgba(255, 92, 138, 0.35);
+}
