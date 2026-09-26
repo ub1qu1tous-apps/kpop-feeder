@@ -1,0 +1,38 @@
+{
+  "illit": {
+    "display_name": "ILLIT",
+    "patterns": ["ILLIT"]
+  },
+  "le-sserafim": {
+    "display_name": "LE SSERAFIM",
+    "patterns": ["LE SSERAFIM", "LE-SSERAFIM", "LESSERAFIM"]
+  },
+  "katseye": {
+    "display_name": "KATSEYE",
+    "patterns": ["KATSEYE"]
+  },
+  "ive": {
+    "display_name": "IVE",
+    "patterns": ["\\bIVE\\b"],
+    "regex": true
+  },
+  "stray-kids": {
+    "display_name": "Stray Kids",
+    "patterns": ["Stray Kids", "\\bSKZ\\b"],
+    "regex": true
+  },
+  "txt": {
+    "display_name": "TXT",
+    "patterns": ["Tomorrow X Together", "\\bTXT\\b"],
+    "regex": true
+  },
+  "hearts2hearts": {
+    "display_name": "Hearts2Hearts",
+    "patterns": ["Hearts2Hearts", "Hearts 2 Hearts", "\\bH:TS\\b"],
+    "regex": true
+  },
+  "babymonster": {
+    "display_name": "BABYMONSTER",
+    "patterns": ["BABYMONSTER", "Baby Monster"]
+  }
+}
