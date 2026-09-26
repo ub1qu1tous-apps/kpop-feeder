@@ -59,7 +59,7 @@ async function loadArticles() {
   const limit = parseInt(limitSelect.value, 10);
   let query = supabaseClient
     .from("articles")
-    .select("title, url, source, published_at")
+    .select("title, url, source, publisher, published_at")
     .eq("group_key", groupKey)
     .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false })
@@ -89,12 +89,39 @@ async function loadArticles() {
         dateStyle: "medium",
         timeStyle: "short",
       });
+      const pubName = a.publisher || a.source;
+      const tier = classifyPublisher(a.publisher);
       return `<li>
         <a href="${escapeAttr(a.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(a.title)}</a>
-        <div class="article-meta">${escapeHtml(a.source)} &middot; ${date}</div>
+        <div class="article-meta">
+          <span class="pub-badge pub-${tier}">${escapeHtml(pubName)}</span> &middot; ${date}
+        </div>
       </li>`;
     })
     .join("");
+}
+
+// Reliability color-coding for the publisher badge: green = mainstream
+// wire/entertainment press, amber = k-pop specialty outlets, red = fan
+// content/tabloid/social (UGC, gossip, "shipping"), gray = unclassified.
+const PUB_TIER_HIGH = [
+  "reuters", "associated press", "ap news", "billboard", "rolling stone", "forbes",
+  "variety", "hollywood reporter", "korea joongang daily", "korea herald",
+  "chosun ilbo", "yonhap", "nme", "teen vogue", "newsweek", "cnn", "bbc",
+];
+const PUB_TIER_MEDIUM = [
+  "soompi", "allkpop", "koreaboo", "kpopmap", "hellokpop", "kpopstarz",
+  "just jared", "thebiaslist", "complex", "koreaportal",
+];
+const PUB_TIER_LOW = ["youtube", "tmz", "twitter", "reddit", "tiktok", "pinterest", "instagram"];
+
+function classifyPublisher(publisher) {
+  if (!publisher) return "unknown";
+  const p = publisher.toLowerCase();
+  if (PUB_TIER_HIGH.some((name) => p.includes(name))) return "high";
+  if (PUB_TIER_MEDIUM.some((name) => p.includes(name))) return "medium";
+  if (PUB_TIER_LOW.some((name) => p.includes(name))) return "low";
+  return "unknown";
 }
 
 function cooldownRemainingMs() {

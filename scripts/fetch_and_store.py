@@ -42,6 +42,7 @@ SOOMPI_FEED = "https://www.soompi.com/feed"
 SOURCE_PRIORITY = {"existing": -1, "soompi": 0, "google_news": 1, "bing_news": 2}
 
 SUFFIX_RE = re.compile(r"\s-\s[^-]+$")  # strips trailing " - Publisher Name"
+PUBLISHER_RE = re.compile(r"\s-\s([^-]+)$")  # captures the same suffix
 PUNCT_RE = re.compile(r"[^a-z0-9 ]")
 DEDUP_WINDOW = timedelta(days=3)
 DEDUP_THRESHOLD = 0.85
@@ -52,6 +53,14 @@ def normalize_title(title):
     title = title.lower()
     title = PUNCT_RE.sub("", title)
     return re.sub(r"\s+", " ", title).strip()
+
+
+def extract_publisher(raw_title):
+    """Pulls the "- Publisher Name" suffix Google/Bing News append to
+    titles. Run on the raw (pre-translation) title since translating the
+    whole string can mangle a non-English publisher name."""
+    m = PUBLISHER_RE.search(raw_title)
+    return m.group(1).strip() if m else None
 
 
 def compile_matcher(group):
@@ -121,10 +130,32 @@ def insert_articles(rows):
     resp.raise_for_status()
 
 
+def report_fetch_status(ok, error=None):
+    """Only meaningful for the full scheduled run (all groups) -- a
+    single-group manual refresh doesn't touch this, so the timestamp
+    reflects "when did the last full sweep last succeed/fail"."""
+    try:
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/fetch_status",
+            headers={**HEADERS, "Prefer": "return=minimal"},
+            params={"id": "eq.1"},
+            json={
+                "last_run_at": datetime.now(timezone.utc).isoformat(),
+                "last_run_ok": ok,
+                "last_error": (str(error)[:500] if error else None),
+            },
+            timeout=30,
+        )
+    except Exception as report_err:
+        print(f"  (failed to report fetch_status: {report_err})")
+
+
 def main():
+    only_key = os.environ.get("GROUP_KEY", "").strip()
+    is_full_run = not only_key
+
     groups = fetch_groups()
 
-    only_key = os.environ.get("GROUP_KEY", "").strip()
     if only_key:
         groups = [g for g in groups if g["key"] == only_key]
         if not groups:
@@ -143,12 +174,14 @@ def main():
 
         candidates = []
         for e in soompi_entries:
-            if matcher.search(e.get("title", "")):
+            raw_title = e.get("title", "")
+            if matcher.search(raw_title):
                 candidates.append(
                     {
-                        "title": maybe_translate_title(e.get("title", "")),
+                        "title": maybe_translate_title(raw_title),
                         "url": e.get("link", ""),
                         "source": "soompi",
+                        "publisher": "Soompi",
                         "published_at": parse_pubdate(e).isoformat(),
                     }
                 )
@@ -159,11 +192,13 @@ def main():
             ("bing_news", f"https://www.bing.com/news/search?q={query}&format=RSS"),
         ]:
             for e in fetch_feed(url)[:20]:
+                raw_title = e.get("title", "")
                 candidates.append(
                     {
-                        "title": maybe_translate_title(e.get("title", "")),
+                        "title": maybe_translate_title(raw_title),
                         "url": e.get("link", ""),
                         "source": source,
+                        "publisher": extract_publisher(raw_title),
                         "published_at": parse_pubdate(e).isoformat(),
                     }
                 )
@@ -179,6 +214,7 @@ def main():
                 "source": e["source"],
                 "title": e["title"],
                 "url": e["url"],
+                "publisher": e.get("publisher"),
                 "published_at": e["published_at"],
             }
             for e in deduped
@@ -191,6 +227,14 @@ def main():
             f"-> {len(new_rows)} new rows inserted"
         )
 
+    if is_full_run:
+        report_fetch_status(ok=True)
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        if not os.environ.get("GROUP_KEY", "").strip():
+            report_fetch_status(ok=False, error=exc)
+        raise
