@@ -25,6 +25,34 @@ displayNameEl.addEventListener("input", () => {
   if (!keyManuallyEdited) keyEl.value = slugify(displayNameEl.value);
 });
 
+document.getElementById("lookup-members-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("lookup-members-btn");
+  const statusEl = document.getElementById("lookup-status");
+  const name = displayNameEl.value.trim();
+
+  if (!name) {
+    statusEl.textContent = "Type the group name first.";
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = "Looking up members on Wikipedia...";
+
+  try {
+    const members = await lookupMembersFromWikipedia(name);
+    if (members.length === 0) {
+      statusEl.textContent = "Couldn't auto-detect members -- add them manually above.";
+    } else {
+      document.getElementById("extra-terms").value = members.join(", ");
+      statusEl.textContent = `Found ${members.length} member(s) -- double-check before saving.`;
+    }
+  } catch (err) {
+    statusEl.textContent = "Lookup failed (network error) -- add members manually.";
+  }
+
+  btn.disabled = false;
+});
+
 function slugify(s) {
   return s
     .toLowerCase()

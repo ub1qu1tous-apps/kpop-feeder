@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>kpop-feeder admin</title>
-  <link rel="stylesheet" href="css/style.css?v=3" />
+  <link rel="stylesheet" href="css/style.css?v=4" />
 </head>
 <body>
   <div class="wrap">
@@ -24,8 +24,10 @@
         <input type="text" id="key" required />
       </div>
       <div>
-        <label for="extra-terms">Extra search terms (comma-separated, optional)</label>
+        <label for="extra-terms">Extra search terms / members (comma-separated)</label>
         <input type="text" id="extra-terms" placeholder="e.g. Karina, Winter, Giselle, Ningning" />
+        <button type="button" id="lookup-members-btn">Look up members (Wikipedia)</button>
+        <p class="hint" id="lookup-status"></p>
       </div>
       <button type="submit" class="primary">Add group</button>
       <p class="error-text" id="add-error"></p>
@@ -52,6 +54,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase-client.js"></script>
+  <script src="js/wikipedia.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>
