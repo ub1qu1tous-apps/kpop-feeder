@@ -23,6 +23,8 @@ from urllib.parse import quote
 import feedparser
 import requests
 
+from translate_utils import maybe_translate_title
+
 SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
 SUPABASE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 
@@ -144,7 +146,7 @@ def main():
             if matcher.search(e.get("title", "")):
                 candidates.append(
                     {
-                        "title": e.get("title", ""),
+                        "title": maybe_translate_title(e.get("title", "")),
                         "url": e.get("link", ""),
                         "source": "soompi",
                         "published_at": parse_pubdate(e).isoformat(),
@@ -159,7 +161,7 @@ def main():
             for e in fetch_feed(url)[:20]:
                 candidates.append(
                     {
-                        "title": e.get("title", ""),
+                        "title": maybe_translate_title(e.get("title", "")),
                         "url": e.get("link", ""),
                         "source": source,
                         "published_at": parse_pubdate(e).isoformat(),
