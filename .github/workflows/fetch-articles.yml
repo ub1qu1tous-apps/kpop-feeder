@@ -3,7 +3,12 @@ name: Fetch articles
 on:
   schedule:
     - cron: "0 */12 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      group_key:
+        description: "Group key to fetch (leave empty to fetch all groups)"
+        required: false
+        type: string
 
 jobs:
   fetch:
@@ -18,3 +23,4 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GROUP_KEY: ${{ github.event.inputs.group_key }}

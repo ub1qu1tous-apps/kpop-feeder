@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>kpop-feeder admin</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a href="index.html" class="back">&larr; groups</a>
+      <button id="logout-btn">Log out</button>
+    </header>
+
+    <h1>Add a group</h1>
+    <form class="stacked" id="add-group-form">
+      <div>
+        <label for="display-name">Group name</label>
+        <input type="text" id="display-name" required placeholder="e.g. aespa" />
+      </div>
+      <div>
+        <label for="key">URL key (auto-filled, editable)</label>
+        <input type="text" id="key" required />
+      </div>
+      <div>
+        <label for="extra-terms">Extra search terms (comma-separated, optional)</label>
+        <input type="text" id="extra-terms" placeholder="e.g. Karina, Winter, Giselle, Ningning" />
+      </div>
+      <button type="submit" class="primary">Add group</button>
+      <p class="error-text" id="add-error"></p>
+      <p class="success-text" id="add-success"></p>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

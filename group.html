@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>kpop-feeder</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a href="index.html" class="back">&larr; groups</a>
+    </header>
+
+    <h1 id="group-title">Loading...</h1>
+
+    <div class="refresh-row">
+      <button id="refresh-btn" class="primary">Refresh</button>
+      <span class="hint" id="refresh-hint">may take up to 20 seconds</span>
+    </div>
+    <p class="status-line" id="status-line"></p>
+
+    <div class="controls">
+      <label class="hint" for="limit-select">Show</label>
+      <select id="limit-select">
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+
+      <label class="hint" for="date-from">From</label>
+      <input type="date" id="date-from" />
+      <label class="hint" for="date-to">To</label>
+      <input type="date" id="date-to" />
+      <button id="search-btn">Search</button>
+      <button id="clear-btn">Clear</button>
+    </div>
+
+    <ul class="article-list" id="article-list"></ul>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/group.js"></script>
+</body>
+</html>

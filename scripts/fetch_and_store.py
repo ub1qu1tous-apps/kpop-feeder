@@ -121,7 +121,14 @@ def insert_articles(rows):
 
 def main():
     groups = fetch_groups()
-    print(f"Loaded {len(groups)} groups from database")
+
+    only_key = os.environ.get("GROUP_KEY", "").strip()
+    if only_key:
+        groups = [g for g in groups if g["key"] == only_key]
+        if not groups:
+            raise SystemExit(f"No group found with key {only_key!r}")
+
+    print(f"Loaded {len(groups)} group(s) from database")
 
     soompi_entries = fetch_feed(SOOMPI_FEED)
     print(f"Soompi: {len(soompi_entries)} entries fetched")
