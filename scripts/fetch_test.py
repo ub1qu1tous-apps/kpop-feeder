@@ -13,22 +13,15 @@ from pathlib import Path
 
 import feedparser
 
-USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-)
-
+# Confirmed working with feedparser's default request behavior.
+# Dropped: allkpop and kpopmap (403 / malformed body under both default
+# and browser user-agents -- looks like bot-protection, not a wrong URL;
+# not worth fighting for a simple free RSS fetcher). koreaportal and
+# whatthekpop: no working feed URL found yet.
 SOURCES = {
     "soompi": "https://www.soompi.com/feed",
     "koreaboo": "https://www.koreaboo.com/feed/",
-    "kpopmap": "https://www.kpopmap.com/feed/",
     "hellokpop": "https://www.hellokpop.com/feed/",
-    # dropped: koreaportal (/rss -> 404) and whatthekpop (domain doesn't
-    # resolve -- bad guess). Re-add once real feed URLs are confirmed.
-    "koreaportal_candidate_feed": "https://www.koreaportal.com/feed/",
-    # allkpop's default guesses got a 403 (bot-protection) -- retrying
-    # with a browser-like User-Agent.
-    "allkpop_candidate_rss_xml": "https://www.allkpop.com/rss.xml",
 }
 
 GROUPS = json.loads((Path(__file__).parent / "groups.json").read_text())
@@ -48,7 +41,7 @@ MATCHERS = {key: compile_matcher(g) for key, g in GROUPS.items()}
 def main():
     for source_name, url in SOURCES.items():
         print(f"\n=== {source_name} ({url}) ===")
-        parsed = feedparser.parse(url, agent=USER_AGENT)
+        parsed = feedparser.parse(url)
 
         if parsed.bozo and not parsed.entries:
             print(f"  FAILED to fetch/parse (http status={parsed.get('status')}): {parsed.bozo_exception}")
