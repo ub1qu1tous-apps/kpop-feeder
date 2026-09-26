@@ -2,7 +2,7 @@ async function loadGroups() {
   const grid = document.getElementById("group-grid");
   const { data, error } = await supabaseClient
     .from("groups")
-    .select("key, display_name, search_patterns")
+    .select("key, display_name")
     .order("display_name", { ascending: true });
 
   if (error) {
@@ -16,16 +16,10 @@ async function loadGroups() {
   }
 
   grid.innerHTML = data
-    .map((g) => {
-      const members = (g.search_patterns || []).filter((p) => p !== g.display_name);
-      const membersLine = members.length
-        ? `<span class="group-btn-members">${escapeHtml(members.join(", "))}</span>`
-        : "";
-      return `<a class="group-btn" href="group.html?g=${encodeURIComponent(g.key)}">
-        <span class="group-btn-name">${escapeHtml(g.display_name)}</span>
-        ${membersLine}
-      </a>`;
-    })
+    .map(
+      (g) =>
+        `<a class="group-btn" href="group.html?g=${encodeURIComponent(g.key)}">${escapeHtml(g.display_name)}</a>`,
+    )
     .join("");
 }
 
