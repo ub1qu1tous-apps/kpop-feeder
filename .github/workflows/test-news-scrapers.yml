@@ -1,0 +1,27 @@
+name: Test news scrapers (diagnostic)
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "Search query for the Google/Bing News feeds"
+        required: false
+        default: "aespa"
+  push:
+    branches: [claude/news-scraper-tool-test-iomkov]
+    paths:
+      - scripts/test_news_scrapers.py
+      - .github/workflows/test-news-scrapers.yml
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt trafilatura newspaper4k lxml_html_clean googlenewsdecoder
+      - run: python scripts/test_news_scrapers.py
+        env:
+          QUERY: ${{ inputs.query }}
