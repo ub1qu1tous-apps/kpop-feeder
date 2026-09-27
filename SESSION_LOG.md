@@ -139,3 +139,30 @@ collecting started 2026-09-26.
   51 pre-cutoff feed entries skipped.
 - Immediate second full fetch: "nothing new to read", 0 new rows —
   incremental reading confirmed.
+
+**Decisions made by the user this session**
+- File by group name only (not member names) when matching article text.
+- File an article under every group it mentions, even if that repeats it
+  across group pages.
+- Read everything already stored once; after that, scheduled runs and
+  refresh read only new links.
+- No full text → search falls back to title + summary.
+- Oldest article date = hard cutoff for fetching (admin-editable).
+- Deleting a group removes its articles and any article text no other
+  group uses.
+- The 89 stored articles older than 2026-01-01 are kept (not deleted).
+
+**Setup done by the user:** ran 006 + 007 SQL in the Supabase SQL editor
+(one combined paste).
+
+**Known limits / how-to**
+- MSN, Chosun, Forbes, allkpop, HoneyPop, Chicago Tribune etc. block
+  reading → those articles are searchable by title/summary only.
+- After adding a new group, run the "Backfill article text" workflow to
+  file older stored articles (back to the cutoff date) that mention it.
+- A single-group refresh can now take up to ~1 min; if it runs past the
+  edge function's 55s poll, the page shows "Still processing…" and the
+  new articles appear on the next reload.
+- Diagnostic-only scripts/workflows from testing (not part of the
+  pipeline): `test_body_extraction`, `test_body_filing_dryrun`,
+  `test_trafilatura`, `test_jina_reader`.
