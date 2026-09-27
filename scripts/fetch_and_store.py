@@ -9,6 +9,11 @@ For each group in the `groups` table:
     a later run), drop near-duplicates by title, and insert only the
     genuinely new ones.
 
+Then, for every link not read before (article_texts is the "already
+read" list), read the full article text, save it for keyword search,
+and also file the article under every group whose name appears in it.
+Only new links are read, so scheduled runs and refreshes stay quick.
+
 Groups live in the database, not in a file here -- adding a new group
 later is a plain INSERT into `groups`, no code change needed.
 """
@@ -17,12 +22,14 @@ import calendar
 import difflib
 import os
 import re
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 import feedparser
 import requests
 
+import article_text
 from translate_utils import maybe_translate_title
 
 SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
@@ -154,66 +161,129 @@ def report_fetch_status(ok, error=None):
         print(f"  (failed to report fetch_status: {report_err})")
 
 
+def make_item(source, entry):
+    """One feed entry, before translation/filing."""
+    url = entry.get("link", "")
+    return {
+        "source": source,
+        "url": url,
+        "raw_title": entry.get("title", ""),
+        "published_at": parse_pubdate(entry).isoformat(),
+        "feed_summary": entry.get("summary"),
+        "link_key": article_text.link_key(source, url),
+    }
+
+
+_translated = {}
+
+
+def to_candidate(item, via_text=False):
+    raw = item["raw_title"]
+    if raw not in _translated:
+        _translated[raw] = maybe_translate_title(raw)
+    return {
+        "title": _translated[raw],
+        "url": item["url"],
+        "source": item["source"],
+        "publisher": "Soompi" if item["source"] == "soompi" else extract_publisher(raw),
+        "published_at": item["published_at"],
+        "link_key": item["link_key"],
+        "via_text": via_text,
+    }
+
+
+def file_by_text(items, all_groups, candidates_by_group, known_keys):
+    """Reads every link not read before, saves its text, and adds it as a
+    candidate for each group whose name appears in it."""
+    to_read, seen = [], set()
+    for item in items:
+        k = item["link_key"]
+        if k and k not in known_keys and k not in seen:
+            seen.add(k)
+            to_read.append(item)
+    if not to_read:
+        print("\nArticle text: nothing new to read")
+        return
+
+    results = article_text.read_many(to_read)
+    article_text.save_texts(SUPABASE_URL, HEADERS, [row for _, row in results])
+    status = Counter(row["status"] for _, row in results)
+    print(
+        f"\nArticle text: read {len(results)}/{len(to_read)} new links "
+        f"(text {status['text']}, summary only {status['summary']}, title only {status['failed']}; "
+        f"{len(to_read) - len(results)} to retry next run)"
+    )
+
+    name_matchers = {g["key"]: article_text.compile_name_matcher(g) for g in all_groups}
+    for item, row in results:
+        haystack = article_text.searchable_text(item["raw_title"], row)
+        for key, mentions in name_matchers.items():
+            if mentions(haystack):
+                # via_text = only the article body names the group, not the title
+                candidates_by_group[key].append(to_candidate(item, via_text=not mentions(item["raw_title"])))
+
+
 def main():
     only_key = os.environ.get("GROUP_KEY", "").strip()
     is_full_run = not only_key
 
-    groups = fetch_groups()
+    all_groups = fetch_groups()
+    groups = all_groups
 
     if only_key:
-        groups = [g for g in groups if g["key"] == only_key]
+        groups = [g for g in all_groups if g["key"] == only_key]
         if not groups:
             raise SystemExit(f"No group found with key {only_key!r}")
 
     print(f"Loaded {len(groups)} group(s) from database")
 
-    soompi_entries = fetch_feed(SOOMPI_FEED)
-    print(f"Soompi: {len(soompi_entries)} entries fetched")
+    text_on = article_text.text_tables_ready(SUPABASE_URL, HEADERS)
+    if not text_on:
+        print("NOTE: article text tables not set up yet (run supabase/006_article_texts.sql) -- titles only")
 
+    soompi_items = [make_item("soompi", e) for e in fetch_feed(SOOMPI_FEED)]
+    print(f"Soompi: {len(soompi_items)} entries fetched")
+    all_items = list(soompi_items)  # everything seen this run, for text reading
+
+    # Direct filing, same as before: Soompi by title match, Google/Bing by
+    # the group's own news search.
+    candidates_by_group = defaultdict(list)
     for group in groups:
         key = group["key"]
-        display_name = group["display_name"]
         matcher = compile_matcher(group)
-        print(f"\n--- {display_name} ---")
+        for item in soompi_items:
+            if matcher.search(item["raw_title"]):
+                candidates_by_group[key].append(to_candidate(item))
 
-        candidates = []
-        for e in soompi_entries:
-            raw_title = e.get("title", "")
-            if matcher.search(raw_title):
-                candidates.append(
-                    {
-                        "title": maybe_translate_title(raw_title),
-                        "url": e.get("link", ""),
-                        "source": "soompi",
-                        "publisher": "Soompi",
-                        "published_at": parse_pubdate(e).isoformat(),
-                    }
-                )
-
-        query = quote(f'"{display_name}" kpop')
+        query = quote(f'"{group["display_name"]}" kpop')
         for source, url in [
             ("google_news", f"https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"),
             ("bing_news", f"https://www.bing.com/news/search?q={query}&format=RSS"),
         ]:
             for e in fetch_feed(url)[:20]:
-                raw_title = e.get("title", "")
-                candidates.append(
-                    {
-                        "title": maybe_translate_title(raw_title),
-                        "url": e.get("link", ""),
-                        "source": source,
-                        "publisher": extract_publisher(raw_title),
-                        "published_at": parse_pubdate(e).isoformat(),
-                    }
-                )
+                item = make_item(source, e)
+                all_items.append(item)
+                candidates_by_group[key].append(to_candidate(item))
 
+    # Filing by article text: any group named anywhere in a newly read
+    # article gets it too -- including groups other than the one refreshed.
+    if text_on:
+        known_keys = article_text.load_known_link_keys(SUPABASE_URL, HEADERS)
+        file_by_text(all_items, all_groups, candidates_by_group, known_keys)
+
+    names = {g["key"]: g["display_name"] for g in all_groups}
+    for key, candidates in candidates_by_group.items():
+        print(f"\n--- {names.get(key, key)} ---")
         existing_titles = fetch_existing_titles(key)
         pool = [{"title": t, "source": "existing"} for t in existing_titles] + candidates
         pool.sort(key=lambda e: SOURCE_PRIORITY.get(e["source"], 99))
         deduped = dedupe(pool)
 
-        new_rows = [
-            {
+        new_rows = []
+        for e in deduped:
+            if e["source"] == "existing":
+                continue
+            row = {
                 "group_key": key,
                 "source": e["source"],
                 "title": e["title"],
@@ -221,14 +291,16 @@ def main():
                 "publisher": e.get("publisher"),
                 "published_at": e["published_at"],
             }
-            for e in deduped
-            if e["source"] != "existing"
-        ]
+            if text_on:
+                row["link_key"] = e["link_key"]
+                row["via_text"] = e["via_text"]
+            new_rows.append(row)
 
         insert_articles(new_rows)
+        via_text = sum(1 for r in new_rows if r.get("via_text"))
         print(
             f"  {len(candidates)} candidates, {len(existing_titles)} existing titles considered "
-            f"-> {len(new_rows)} new rows inserted"
+            f"-> {len(new_rows)} new rows inserted ({via_text} because the article text names the group)"
         )
 
     if is_full_run:

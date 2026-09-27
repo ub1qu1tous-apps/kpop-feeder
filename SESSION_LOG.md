@@ -77,3 +77,45 @@ not part of the scheduled pipeline): `backfill_translations.py`,
   (ive, stray-kids, txt, hearts2hearts) -- harmless for matching, just
   means the raw column isn't a clean list to display from directly
   (use `members` for that).
+
+## 2026-09-27 — Full article text: search + filing by group name
+
+**Why:** titles often don't name the group or members an article is
+about; keyword search (e.g. a member name) and "any news mentioning
+ILLIT" need the article body.
+
+**Tested first** (dry runs, nothing saved): googlenewsdecoder resolved
+30/30 Google links with no rate limiting; trafilatura got full text for
+85% of sampled articles (Soompi 10/10, Google 24/30, Bing 17/20), ~1.5s
+each. Failing sites: MSN, Chosun, Forbes, allkpop, HoneyPop (title or
+summary only). 14 extra group filings in 60 articles, all genuine.
+Earliest stored article: 2019-03-21 (TWICE, surfaced by Google search);
+collecting started 2026-09-26.
+
+**How it works**
+- `supabase/006_article_texts.sql`: `article_texts` table (text stored
+  once per link, keyed by `link_key`; a row = "already read"),
+  `articles.link_key` + `articles.via_text`, and the `articles_search`
+  view (title + summary + body as `search_text`).
+- `link_key`: Bing feed links change every fetch (tracking id), so Bing
+  uses the real publisher URL from `url=`; Google links minus query
+  string; Soompi as-is.
+- `scripts/article_text.py`: resolve (googlenewsdecoder / Bing url=),
+  fetch with a browser UA, trafilatura text + meta description as
+  summary; group-NAME matcher (member names deliberately excluded —
+  "Winter", "Han" etc. are everyday words in full text). Names that are
+  English words (TWICE, IVE, ...) must be capitalised; others any case
+  (so "aespa" matches).
+- `fetch_and_store.py`: direct filing unchanged; then every link not in
+  `article_texts` is read, saved, and filed under every group it names
+  (also groups other than the one being refreshed). Only new links are
+  read, so 12h runs and refreshes stay quick. Resolve failures aren't
+  saved, so they retry next run. Falls back to titles-only if 006
+  hasn't been run.
+- `scripts/backfill_article_text.py` (+ workflow "Backfill article
+  text"): one-time pass over everything stored; safe to re-run — e.g.
+  after adding a new group, to file older articles that mention it.
+- Group page: search uses `articles_search.search_text` (falls back to
+  title search if the view is missing); "mentioned in article" tag when
+  only the body names the group; '"keyword" found in article' tag when
+  the keyword isn't in the title. Refresh note now "up to a minute".

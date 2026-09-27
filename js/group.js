@@ -60,11 +60,14 @@ async function init() {
   refreshBtn.addEventListener("click", onRefreshClick);
 }
 
-async function loadArticles() {
+// articles_search = articles + one searchable blob of title, summary and
+// full article text. Falls back to plain title search on the articles
+// table if the view isn't there (e.g. migration 006 not run yet).
+function buildQuery(table, columns, searchColumn) {
   const limit = parseInt(limitSelect.value, 10);
   let query = supabaseClient
-    .from("articles")
-    .select("id, title, url, source, publisher, published_at")
+    .from(table)
+    .select(columns)
     .eq("group_key", groupKey)
     .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false })
@@ -74,9 +77,20 @@ async function loadArticles() {
   if (dateTo.value) query = query.lte("published_at", `${dateTo.value}T23:59:59Z`);
 
   const keyword = keywordInput.value.trim();
-  if (keyword) query = query.ilike("title", `%${keyword}%`);
+  if (keyword) query = query.ilike(searchColumn, `%${keyword}%`);
+  return query;
+}
 
-  const { data, error } = await query;
+async function loadArticles() {
+  const keyword = keywordInput.value.trim();
+  let { data, error } = await buildQuery(
+    "articles_search",
+    "id, title, url, source, publisher, published_at, via_text",
+    "search_text"
+  );
+  if (error) {
+    ({ data, error } = await buildQuery("articles", "id, title, url, source, publisher, published_at", "title"));
+  }
 
   if (error) {
     listEl.innerHTML = `<li class="empty">Failed to load articles.</li>`;
@@ -96,11 +110,16 @@ async function loadArticles() {
       });
       const pubName = a.publisher || a.source;
       const tier = classifyPublisher(a.publisher);
+      const notes = [];
+      if (a.via_text) notes.push(`<span class="text-note" title="The group is named in the article, not the title">mentioned in article</span>`);
+      if (keyword && !a.title.toLowerCase().includes(keyword.toLowerCase())) {
+        notes.push(`<span class="text-note">"${escapeHtml(keyword)}" found in article</span>`);
+      }
       const deleteBtn = isAdmin ? `<button class="article-delete" data-id="${a.id}" aria-label="Delete">&times;</button>` : "";
       return `<li>
         <a href="${escapeAttr(a.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(a.title)}</a>
         <div class="article-meta">
-          <span class="pub-badge pub-${tier}">${escapeHtml(pubName)}</span> &middot; ${date} ${deleteBtn}
+          <span class="pub-badge pub-${tier}">${escapeHtml(pubName)}</span> &middot; ${date} ${notes.join(" ")} ${deleteBtn}
         </div>
       </li>`;
     })
@@ -172,7 +191,7 @@ function relativeTime(date) {
 
 async function onRefreshClick() {
   refreshBtn.disabled = true;
-  statusEl.textContent = "Fetching latest news... this can take up to 20 seconds.";
+  statusEl.textContent = "Fetching latest news... this can take up to a minute.";
 
   try {
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/trigger-fetch`, {

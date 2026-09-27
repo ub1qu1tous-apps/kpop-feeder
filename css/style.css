@@ -188,6 +188,15 @@ button:disabled {
 .pub-high { background: rgba(111, 208, 140, 0.15); color: #6fd08c; border-color: rgba(111, 208, 140, 0.35); }
 .pub-medium { background: rgba(240, 190, 90, 0.15); color: #f0be5a; border-color: rgba(240, 190, 90, 0.35); }
 .pub-low { background: rgba(255, 92, 138, 0.15); color: var(--accent); border-color: rgba(255, 92, 138, 0.35); }
+.text-note {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+}
+
 .pub-unknown { background: rgba(146, 153, 166, 0.15); color: var(--muted); border-color: rgba(146, 153, 166, 0.3); }
 
 .legend {
