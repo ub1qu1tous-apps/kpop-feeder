@@ -64,11 +64,15 @@ def extract_publisher(raw_title):
 
 
 def compile_matcher(group):
+    """Literal (non-regex) patterns are always word-bounded, so a short
+    name like "Han" can't match as a mid-word substring (e.g. inside
+    "Hands"). Raw regex patterns (is_regex=true) are trusted to bound
+    themselves -- that's the whole point of using regex for them."""
     patterns = group["search_patterns"]
     if group.get("is_regex"):
         combined = "|".join(patterns)
     else:
-        combined = "|".join(re.escape(p) for p in patterns)
+        combined = "|".join(rf"\b{re.escape(p)}\b" for p in patterns)
     return re.compile(combined, re.IGNORECASE)
 
 
