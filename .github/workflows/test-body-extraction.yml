@@ -1,0 +1,24 @@
+name: Test body extraction (diagnostic)
+
+on:
+  workflow_dispatch:
+    inputs:
+      per_source:
+        description: "Articles to sample per source"
+        required: false
+        default: "8"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt trafilatura googlenewsdecoder newspaper4k lxml_html_clean
+      - run: python scripts/test_body_extraction.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PER_SOURCE: ${{ github.event.inputs.per_source }}
