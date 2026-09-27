@@ -129,3 +129,13 @@ collecting started 2026-09-26.
 - Deleting a group already cascaded to its articles; a `before delete`
   trigger on `groups` now also removes stored article text no other
   group uses. Admin delete confirmation says so.
+
+**Go-live results (2026-09-27)**
+- Backfill: 349 links read in ~6 min (258 full text, 32 summary only,
+  59 title only; 0 unresolved). 89 stored rows older than 2026-01-01
+  skipped. 120 extra filings by group name (KATSEYE +20, TWICE +15,
+  LE SSERAFIM +15, Stray Kids +13, ILLIT +13, aespa +13, ...).
+- First full fetch after: 71 new links read, 24 new rows (19 via text),
+  51 pre-cutoff feed entries skipped.
+- Immediate second full fetch: "nothing new to read", 0 new rows —
+  incremental reading confirmed.
