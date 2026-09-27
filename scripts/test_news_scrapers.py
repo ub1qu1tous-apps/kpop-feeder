@@ -50,7 +50,8 @@ yourself yourselves s t one new us like get got via per
 
 def resolve_google(link):
     result = gnewsdecoder(link, interval=1)
-    if result.get("status"):
+    # 0.2.x returns "success"; older releases used "status".
+    if result.get("success") or result.get("status"):
         return result["decoded_url"]
     raise RuntimeError(f"googlenewsdecoder failed: {result.get('message')}")
 
