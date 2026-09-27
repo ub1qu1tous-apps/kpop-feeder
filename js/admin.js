@@ -8,6 +8,7 @@ let adminSession = null;
   }
   adminSession = data.session;
   loadStatusPanel();
+  loadSettings();
   loadManageGroups();
 })();
 
@@ -115,6 +116,32 @@ function relativeTime(date) {
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
 }
+
+const oldestDateEl = document.getElementById("oldest-date");
+const settingsStatusEl = document.getElementById("settings-status");
+
+async function loadSettings() {
+  const { data, error } = await supabaseClient
+    .from("app_settings")
+    .select("oldest_article_date")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error || !data) {
+    settingsStatusEl.textContent = "Settings not set up yet (run supabase/007_cutoff_and_group_cleanup.sql).";
+    return;
+  }
+  oldestDateEl.value = data.oldest_article_date;
+}
+
+document.getElementById("settings-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  settingsStatusEl.textContent = "Saving...";
+  const { error } = await supabaseClient
+    .from("app_settings")
+    .update({ oldest_article_date: oldestDateEl.value })
+    .eq("id", 1);
+  settingsStatusEl.textContent = error ? "Save failed: " + error.message : "Saved. Applies from the next fetch.";
+});
 
 async function loadStatusPanel() {
   const panel = document.getElementById("status-panel");
@@ -256,7 +283,7 @@ async function saveGroup(row, key) {
 
 async function deleteGroup(row, key) {
   const displayName = row.querySelector(".mg-display-name").value;
-  if (!confirm(`Delete "${displayName}" and all its articles? This can't be undone.`)) return;
+  if (!confirm(`Delete "${displayName}"? This also deletes all its stored articles and article text from the database. This can't be undone.`)) return;
 
   const { error } = await supabaseClient.from("groups").delete().eq("key", key);
   if (error) {

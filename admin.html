@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>kpop-feeder admin</title>
-  <link rel="stylesheet" href="css/style.css?v=7" />
+  <link rel="stylesheet" href="css/style.css?v=8" />
 </head>
 <body>
   <div class="wrap">
@@ -46,6 +46,17 @@
     </div>
     <p class="status-line" id="trigger-all-status"></p>
 
+    <h1>Settings</h1>
+    <form class="stacked" id="settings-form">
+      <div>
+        <label for="oldest-date">Oldest article date</label>
+        <input type="date" id="oldest-date" required />
+        <p class="hint">Articles published before this date are never fetched. When you add a new group, its news only goes back to here.</p>
+      </div>
+      <button type="submit" class="primary">Save</button>
+      <p class="status-line" id="settings-status"></p>
+    </form>
+
     <h1>Manage groups</h1>
     <div id="manage-groups" class="admin-panel">
       <p class="hint">Loading...</p>
@@ -53,9 +64,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=7"></script>
-  <script src="js/supabase-client.js?v=7"></script>
-  <script src="js/wikipedia.js?v=7"></script>
-  <script src="js/admin.js?v=7"></script>
+  <script src="js/config.js?v=8"></script>
+  <script src="js/supabase-client.js?v=8"></script>
+  <script src="js/wikipedia.js?v=8"></script>
+  <script src="js/admin.js?v=8"></script>
 </body>
 </html>

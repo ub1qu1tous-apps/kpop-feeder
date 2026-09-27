@@ -8,7 +8,7 @@ skips links already read and filings that already exist):
      its text (or title/summary), skipping near-duplicate titles
 
 Re-running this after adding a new group also files older stored
-articles that mention it.
+articles that mention it (back to the admin's oldest-article date).
 """
 
 import difflib
@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 import requests
 
 import article_text
-from fetch_and_store import DEDUP_THRESHOLD, normalize_title
+from fetch_and_store import DEDUP_THRESHOLD, fetch_oldest_date, is_too_old, normalize_title
 
 SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
 SUPABASE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
@@ -67,10 +67,17 @@ def main():
     print(f"Step 1: set link_key on {len(missing)} articles")
 
     # 2. read text ---------------------------------------------------------
+    # Articles older than the admin's oldest-article date are left alone:
+    # not read, and not filed under any more groups.
+    oldest = fetch_oldest_date()
     known = article_text.load_known_link_keys(SUPABASE_URL, HEADERS)
-    first_by_key = {}
+    first_by_key, skipped = {}, 0
     for a in articles:
-        first_by_key.setdefault(a["link_key"], a)
+        if is_too_old(a["published_at"], oldest):
+            skipped += 1
+        else:
+            first_by_key.setdefault(a["link_key"], a)
+    print(f"Oldest article date: {oldest.date() if oldest else 'not set'} ({skipped} older rows skipped)")
     to_read = [
         {"source": a["source"], "url": a["url"]}
         for k, a in first_by_key.items() if k not in known

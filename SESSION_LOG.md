@@ -119,3 +119,13 @@ collecting started 2026-09-26.
   title search if the view is missing); "mentioned in article" tag when
   only the body names the group; '"keyword" found in article' tag when
   the keyword isn't in the title. Refresh note now "up to a minute".
+
+**Follow-up (same day): oldest-article cutoff + full group cleanup**
+- `supabase/007_cutoff_and_group_cleanup.sql`: `app_settings` single row
+  with `oldest_article_date` (default 2026-01-01, admin-editable under
+  Settings on admin.html). Fetch and backfill skip anything published
+  before it — mainly so a newly added group doesn't pull years-old
+  articles from news search. Already-stored older articles are kept.
+- Deleting a group already cascaded to its articles; a `before delete`
+  trigger on `groups` now also removes stored article text no other
+  group uses. Admin delete confirmation says so.

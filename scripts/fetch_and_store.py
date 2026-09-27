@@ -161,6 +161,28 @@ def report_fetch_status(ok, error=None):
         print(f"  (failed to report fetch_status: {report_err})")
 
 
+def fetch_oldest_date():
+    """Admin setting (app_settings table): articles published before this
+    date are never stored. None if the setting isn't set up yet."""
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/app_settings",
+            headers=HEADERS,
+            params={"select": "oldest_article_date", "id": "eq.1"},
+            timeout=30,
+        )
+        if resp.status_code == 200 and resp.json():
+            day = datetime.fromisoformat(resp.json()[0]["oldest_article_date"])
+            return day.replace(tzinfo=timezone.utc)
+    except Exception as e:
+        print(f"  (couldn't load oldest_article_date: {e})")
+    return None
+
+
+def is_too_old(published_at, oldest):
+    return oldest is not None and datetime.fromisoformat(published_at) < oldest
+
+
 def make_item(source, entry):
     """One feed entry, before translation/filing."""
     url = entry.get("link", "")
@@ -241,7 +263,17 @@ def main():
     if not text_on:
         print("NOTE: article text tables not set up yet (run supabase/006_article_texts.sql) -- titles only")
 
-    soompi_items = [make_item("soompi", e) for e in fetch_feed(SOOMPI_FEED)]
+    oldest = fetch_oldest_date()
+    print(f"Oldest article date: {oldest.date() if oldest else 'not set'}")
+    too_old = 0
+
+    soompi_items = []
+    for e in fetch_feed(SOOMPI_FEED):
+        item = make_item("soompi", e)
+        if is_too_old(item["published_at"], oldest):
+            too_old += 1
+        else:
+            soompi_items.append(item)
     print(f"Soompi: {len(soompi_items)} entries fetched")
     all_items = list(soompi_items)  # everything seen this run, for text reading
 
@@ -262,8 +294,14 @@ def main():
         ]:
             for e in fetch_feed(url)[:20]:
                 item = make_item(source, e)
+                if is_too_old(item["published_at"], oldest):
+                    too_old += 1
+                    continue
                 all_items.append(item)
                 candidates_by_group[key].append(to_candidate(item))
+
+    if too_old:
+        print(f"Skipped {too_old} feed entries published before the oldest article date")
 
     # Filing by article text: any group named anywhere in a newly read
     # article gets it too -- including groups other than the one refreshed.
