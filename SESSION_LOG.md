@@ -219,3 +219,17 @@ collecting started 2026-09-26.
   Stray Kids +1). Display name still "Girl's Generation" — the news
   search query uses the display name, so renaming it is still the main
   fix.
+
+## 2026-09-28 — Session-log preference
+
+- User asked for a global preference: always keep a session log, and read
+  only the session log whenever past info is needed.
+- Added `CLAUDE.md` to this repo with that rule (applies to any session
+  on kpop-feeder, any device). Gave the user a cloud-environment setup
+  script snippet that writes the same rule to `~/.claude/CLAUDE.md` for
+  every cloud session, and the same text for `~/.claude/CLAUDE.md` on any
+  computer running Claude Code locally.
+- Token usage for this session so far (from the transcript): ~0.42M
+  output, ~5.35M new input, ~257M cached re-reads (665 steps). Suggested
+  starting fresh sessions per feature and relying on this log.
+- GitHub access dropped mid-session; user reconnected it.
