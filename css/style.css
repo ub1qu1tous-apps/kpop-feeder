@@ -246,14 +246,21 @@ button:disabled {
   text-align: center;
 }
 
+/* Discreet but findable: faint muted text that brightens on hover. */
 .admin-corner {
   position: fixed;
-  right: 12px;
-  bottom: 10px;
-  font-size: 0.72rem;
-  color: #3a3d45;
+  right: 14px;
+  bottom: 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
   text-decoration: none;
-  opacity: 0.6;
+  opacity: 0.55;
+}
+
+.admin-corner:hover,
+.admin-corner:focus-visible {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 form.stacked {
