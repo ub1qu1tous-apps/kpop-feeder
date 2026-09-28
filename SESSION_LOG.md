@@ -276,3 +276,18 @@ otherwise show a "Failed to load" error (table doesn't exist yet).
   abused.
 - Message length capped at 2000 characters (DB constraint), not
   surfaced anywhere in the UI besides the textarea's `maxlength`.
+
+**Follow-up (same day): cap behavior changed to block, not drop**
+- User ran 008, then changed the cap behavior: once at 20 entries, stop
+  taking new posts (disable the box, "Entries maxed out -- please
+  contact the admin") instead of silently dropping the oldest.
+- `supabase/009_feedback_cap.sql`: replaces 008's after-insert
+  auto-delete trigger with a before-insert trigger that raises an error
+  if the table is already at 20. The board only opens back up once the
+  admin deletes an entry.
+- `feedback.html`/`js/feedback.js`: textarea + submit disabled and a
+  notice shown once the loaded list has 20 entries; the DB-side rejection
+  is the backstop for two people posting at the same moment. Assets
+  bumped to `?v=13` (feedback page only).
+- User still needs to run `supabase/009_feedback_cap.sql` (008 alone
+  leaves the old auto-delete-oldest behavior in place).

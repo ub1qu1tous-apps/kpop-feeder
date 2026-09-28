@@ -12,6 +12,14 @@ function relativeTime(date) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+const FEEDBACK_MAX = 20;
+
+function setFormFull(isFull) {
+  document.getElementById("feedback-full-notice").hidden = !isFull;
+  document.getElementById("feedback-message").disabled = isFull;
+  document.querySelector("#feedback-form button[type=submit]").disabled = isFull;
+}
+
 async function loadFeedback() {
   const list = document.getElementById("feedback-list");
   const { data, error } = await supabaseClient
@@ -23,6 +31,8 @@ async function loadFeedback() {
     list.innerHTML = `<li class="error-text">Failed to load: ${escapeHtml(error.message)}</li>`;
     return;
   }
+
+  setFormFull(data.length >= FEEDBACK_MAX);
 
   if (!data.length) {
     list.innerHTML = `<li class="empty">Nothing posted yet -- be the first.</li>`;
@@ -59,7 +69,12 @@ document.getElementById("feedback-form").addEventListener("submit", async (e) =>
   submitBtn.disabled = false;
 
   if (error) {
-    errorEl.textContent = "Failed to post: " + error.message;
+    // The DB itself refuses inserts once at 20 (in case two people post
+    // at once) -- show the same friendly message as the pre-emptive check.
+    errorEl.textContent = error.message.includes("Feedback board is full")
+      ? ""
+      : "Failed to post: " + error.message;
+    loadFeedback();
     return;
   }
 
