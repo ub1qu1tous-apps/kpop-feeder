@@ -8,12 +8,12 @@ const WIKI_API = "https://en.wikipedia.org/w/api.php?format=json&formatversion=2
 const MAX_PAGES_TO_CHECK = 3;
 
 async function lookupMembersFromWikipedia(groupName) {
-  // Search the plain name: adding words like "kpop group" pulls in the
-  // agency or a member's page ahead of the group's own page.
-  const searchData = await (
-    await fetch(`${WIKI_API}&action=query&list=search&srlimit=5&srsearch=${encodeURIComponent(groupName)}`)
-  ).json();
-  const titles = (searchData?.query?.search || []).map((s) => s.title);
+  // Search the plain name, limited to music-artist pages: extra words
+  // like "kpop group" pulled in the agency or a member's page instead,
+  // and the filter finds pages titled differently from the short name
+  // (e.g. "TXT" -> "Tomorrow X Together").
+  let titles = await searchTitles(`${groupName} hastemplate:"Infobox musical artist"`);
+  if (!titles.length) titles = await searchTitles(groupName);
 
   // Check the page whose title matches the name first (e.g. "KiiiKiii",
   // "Ive (group)"), then the rest in search order, until one has a
@@ -33,6 +33,13 @@ async function lookupMembersFromWikipedia(groupName) {
     if (members.length) return members;
   }
   return [];
+}
+
+async function searchTitles(query) {
+  const data = await (
+    await fetch(`${WIKI_API}&action=query&list=search&srlimit=5&srsearch=${encodeURIComponent(query)}`)
+  ).json();
+  return (data?.query?.search || []).map((s) => s.title);
 }
 
 // "Ive (group)" -> "ive", "LE SSERAFIM" -> "lesserafim"

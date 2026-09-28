@@ -6,7 +6,7 @@ on:
       names:
         description: "Comma-separated group names"
         required: false
-        default: "KiiiKiii,aespa,ILLIT,Hearts2Hearts,IVE,TWICE,Stray Kids,TXT,ITZY,NMIXX,BABYMONSTER,LE SSERAFIM,KATSEYE"
+        default: "TXT,KiiiKiii,aespa,TWICE,BABYMONSTER,IVE"
 
 jobs:
   test:
