@@ -246,11 +246,10 @@ button:disabled {
   text-align: center;
 }
 
-/* Discreet but findable: faint muted text that brightens on hover. */
+/* Discreet but findable: faint muted text that brightens on hover. Sits
+   at the right end of the header, lined up with the right-hand column of
+   group buttons. */
 .admin-corner {
-  position: fixed;
-  right: 14px;
-  bottom: 12px;
   font-size: 0.8rem;
   color: var(--muted);
   text-decoration: none;
