@@ -376,3 +376,16 @@ GitHub Pages site.
   narrow widths is pre-existing, not something the logo caused.
 - Not done (mentioned as a suggestion, not confirmed): using the same
   artwork as the browser-tab favicon.
+
+**Follow-up (same day): favicon added**
+- User confirmed the earlier favicon suggestion (after asking what a
+  favicon is).
+- `img/favicon.png`: square crop of just the mic icon from the logo
+  artwork (not the full wordmark -- too wide to read at favicon size),
+  transparent background, palette-quantized (43KB -> 6.4KB). Checked
+  legible at actual tab size (32px), not just full size.
+- Linked from every page's `<head>` (`index.html`, `group.html`,
+  `login.html`, `admin.html`, `feedback.html`) -- unlike the header
+  logo, which is index.html only, the favicon is tab-wide so it went on
+  every page. Assets bumped per-page to match each page's existing
+  version.
