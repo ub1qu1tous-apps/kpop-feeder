@@ -211,3 +211,11 @@ collecting started 2026-09-26.
   used by `compile_matcher` too); the Bing query drops apostrophes from
   the group name. User to rename the group to "Girls' Generation" in
   admin.
+- Added "Girls' Generation" and "Girls Generation" to the group's search
+  terms (new reusable workflow "Add search terms to a group",
+  `scripts/add_search_terms.py`; skips terms already present ignoring
+  case/apostrophe style; members untouched). Re-ran the backfill: +10
+  articles for Girls' Generation (also KiiiKiii +6, TWICE +2, aespa +2,
+  Stray Kids +1). Display name still "Girl's Generation" — the news
+  search query uses the display name, so renaming it is still the main
+  fix.
