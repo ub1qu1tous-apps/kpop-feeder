@@ -344,3 +344,35 @@ GitHub Pages site.
 - If the user later wants this to apply to other projects too, it'd
   need copying into each repo's `CLAUDE.md`, or setting up the
   environment's setup script from a desktop session.
+
+## 2026-09-28 — Logo replaces the header text on the main page
+
+- User supplied a logo image ("K-Pop Feeder -- Feed your K-pop
+  passion", mic icon + gradient wordmark, black background) and asked
+  to swap it in for the plain "kpop-feeder" text in the main page's
+  header, cropping the black as needed.
+- Per the new "Code requests" preference, asked before writing
+  anything: scope (index.html only, vs every page) and whether to keep
+  the tagline in the crop. User picked index.html only, tagline kept.
+- `img/logo.png`: cropped tight to the logo content (dropped the excess
+  black margin), background keyed to transparent (alpha from
+  brightness, since the source background was solid near-black),
+  downscaled to a sane header-render size, palette-quantized -- 241KB
+  source down to ~22KB. Verified composited against the site's actual
+  `#0f1115` background (no visible edge) and against white (no dark
+  halo from the transparency keying).
+- `index.html`: `<span class="brand">kpop-feeder</span>` -> `<img
+  src="img/logo.png" class="brand-logo">`. Assets bumped to `?v=14`
+  (index.html only -- other pages still show the plain text brand,
+  unchanged).
+- `css/style.css`: removed the now-unused `header.top a.brand` text
+  rule (nothing else referenced it), added `.brand-logo` (44px tall,
+  auto width).
+- Checked at both a wide viewport and a real phone width (393px, no
+  build/dev-server needed -- static site served locally, driven with
+  Playwright since `cdn.jsdelivr.net`/Supabase are blocked by this
+  environment's network policy for a full live check): logo and header
+  layout hold up fine; the feedback button wrapping to two lines at
+  narrow widths is pre-existing, not something the logo caused.
+- Not done (mentioned as a suggestion, not confirmed): using the same
+  artwork as the browser-tab favicon.

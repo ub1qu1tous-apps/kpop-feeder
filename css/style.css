@@ -30,11 +30,10 @@ header.top {
   margin-bottom: 24px;
 }
 
-header.top a.brand {
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 1.25rem;
+.brand-logo {
+  height: 44px;
+  width: auto;
+  display: block;
 }
 
 header.top a.back {
