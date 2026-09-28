@@ -194,3 +194,9 @@ collecting started 2026-09-26.
   terms: entries still listed keep their stored form (e.g. `\bSKZ\b`),
   entries removed from both boxes are dropped, new ones are added
   (word-bounded for regex groups). Admin assets ?v=11.
+
+**Main page admin link (2026-09-28)**
+- Was near-invisible on laptops (dark grey, fixed bottom-right). Now in
+  the header at top-right, flush with the right column of group
+  buttons, muted colour at 55% opacity, brightens on hover. Confirmed
+  by the user on laptop. Assets ?v=9 (index/group/login).
