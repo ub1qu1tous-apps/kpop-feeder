@@ -313,3 +313,34 @@ GitHub Pages site.
   around a collision. Assets bumped to `?v=13`.
 - Manage-groups rows never showed the key at all, so no change needed
   there.
+
+## 2026-09-28 — Behavior preferences added to CLAUDE.md
+
+- User asked what global Claude preferences existed. None did: no
+  `~/.claude/CLAUDE.md` in this container (the session-log setup-script
+  snippet from earlier this same day was only ever a suggestion, never
+  actually added to the environment's setup script), no user-authored
+  `~/.claude/settings.json` -- only harness-provided
+  `launcher-settings.json` (a Stop hook + Skill pre-approval, not a
+  preference either of us set).
+- User then gave three preferences to add. First tried the proper
+  global route (`~/.claude/CLAUDE.md`, plus a setup-script snippet for
+  the user to paste into the environment's settings so it survives a
+  fresh container) -- but the user is on mobile and can't reach that
+  settings screen. Landed on: add them to this repo's own `CLAUDE.md`
+  instead, since it's committed to git and reloads every session
+  automatically. Traded scope (kpop-feeder only, not every project) for
+  something that actually persists without a desktop.
+- Added to `CLAUDE.md` under a new "Preferences" section:
+  - **Code requests:** summarize the request, ask clarifying questions,
+    give 3 brief improvement suggestions -- write code only once the
+    user confirms they're ready.
+  - **Short forms:** the user uses shortenings like "u" (you), "yr"
+    (your); ask about an unfamiliar one, then save it to the "Known
+    short forms" list once confirmed.
+  - **Free tools first:** default any external-software recommendation
+    to free options; ask before recommending a paid one. User currently
+    only pays for Claude Pro.
+- If the user later wants this to apply to other projects too, it'd
+  need copying into each repo's `CLAUDE.md`, or setting up the
+  environment's setup script from a desktop session.
