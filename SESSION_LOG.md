@@ -166,3 +166,18 @@ collecting started 2026-09-26.
 - Diagnostic-only scripts/workflows from testing (not part of the
   pipeline): `test_body_extraction`, `test_body_filing_dryrun`,
   `test_trafilatura`, `test_jina_reader`.
+
+## 2026-09-28 — Wikipedia member lookup fix
+
+- "Look up members" couldn't find KiiiKiii: it searched "<name> kpop
+  group", which ranked the agency (Starship Entertainment) first; aespa
+  had the same weakness (Karina's page ranked first).
+- `js/wikipedia.js` now searches the plain name restricted to pages with
+  the "Infobox musical artist" template (falls back to a plain search),
+  checks the title-matching page first, then up to 3 results until one
+  has an infobox members list. This also finds TXT via "Tomorrow X
+  Together".
+- Verified (GitHub Actions, `test-wikipedia-lookup` diagnostic):
+  KiiiKiii, TXT, aespa, TWICE, BABYMONSTER, IVE, ILLIT, Hearts2Hearts,
+  Stray Kids, ITZY, NMIXX, LE SSERAFIM and KATSEYE all return members.
+- Admin page assets bumped to ?v=10.
