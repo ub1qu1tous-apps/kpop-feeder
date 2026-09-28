@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>kpop-feeder feedback</title>
+  <link rel="stylesheet" href="css/style.css?v=12" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a href="index.html" class="back">&larr; groups</a>
+    </header>
+
+    <h1>Feedback &amp; group requests</h1>
+    <p class="hint">Report a bug, ask for a group to be added, or leave any other feedback. Posts here are public and anyone can read them.</p>
+
+    <form class="stacked" id="feedback-form">
+      <textarea id="feedback-message" rows="4" maxlength="2000" required placeholder="e.g. Please add KiiiKiii, or: search doesn't find articles about ..."></textarea>
+      <button type="submit" class="primary">Post</button>
+      <p class="error-text" id="feedback-error"></p>
+    </form>
+
+    <p class="hint">Only the most recent 20 entries are kept; older ones drop off automatically.</p>
+
+    <ul class="feedback-list" id="feedback-list">
+      <li class="hint">Loading...</li>
+    </ul>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js?v=12"></script>
+  <script src="js/supabase-client.js?v=12"></script>
+  <script src="js/feedback.js?v=12"></script>
+</body>
+</html>

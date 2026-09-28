@@ -233,3 +233,46 @@ collecting started 2026-09-26.
   output, ~5.35M new input, ~257M cached re-reads (665 steps). Suggested
   starting fresh sessions per feature and relying on this log.
 - GitHub access dropped mid-session; user reconnected it.
+
+## 2026-09-28 — Public feedback / group-request board
+
+**What was added:** a "Feedback / request a group" button, top-right of
+the main page (next to, but visually distinct from, the discreet admin
+link -- this one is meant to be noticed). It leads to a new page,
+`feedback.html`: a textarea to post, and a public list of everything
+posted so far (newest first, no login needed to read or post).
+
+**Decisions made by the user this session**
+- Anonymous, no accounts -- anyone can post, everyone sees the same list.
+- Each entry has a status: `Open` (default) or `Done`. Only the admin can
+  change it (from the new Feedback panel on admin.html) or delete an
+  entry.
+- Whole list shown, no pagination, capped at 20 entries -- when a 21st
+  comes in, the oldest is dropped automatically (my default, confirmed
+  by not objecting; the alternative -- blocking new posts once full --
+  was rejected as worse for spam bursts).
+
+**How it works**
+- `supabase/008_feedback.sql`: `feedback` table (`message`, `status`
+  `open`/`done`, `created_at`). RLS: public read, public insert (checked
+  to always land as `status = 'open'`, so a visitor can't post directly
+  as Done), authenticated (admin) update/delete. An `after insert`
+  trigger (`security definer`, same pattern as the group-delete cleanup
+  trigger) deletes everything past the 20 most recent rows.
+- `feedback.html` + `js/feedback.js`: textarea + submit, list below with
+  a status badge per entry.
+- `admin.html` + `js/admin.js`: new "Feedback" panel, same place as
+  Manage groups -- each entry with a "Mark Open/Done" toggle and Delete,
+  same confirm-before-delete pattern as group deletion.
+- Assets bumped to `?v=12` on every page (shared `css/style.css` changed).
+
+**Setup needed from the user:** run `supabase/008_feedback.sql` in the
+Supabase SQL editor before this goes live -- the feedback page will
+otherwise show a "Failed to load" error (table doesn't exist yet).
+
+**Known limits**
+- No spam protection beyond the 20-entry cap and Supabase's own rate
+  limits -- no CAPTCHA, no per-visitor throttle. Revisit if it gets
+  abused.
+- Message length capped at 2000 characters (DB constraint), not
+  surfaced anywhere in the UI besides the textarea's `maxlength`.

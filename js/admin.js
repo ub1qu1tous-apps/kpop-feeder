@@ -10,6 +10,7 @@ let adminSession = null;
   loadStatusPanel();
   loadSettings();
   loadManageGroups();
+  loadFeedbackPanel();
 })();
 
 document.getElementById("logout-btn").addEventListener("click", async () => {
@@ -325,4 +326,67 @@ async function deleteGroup(row, key) {
     return;
   }
   loadManageGroups();
+}
+
+// ---------- Feedback ----------
+
+async function loadFeedbackPanel() {
+  const panel = document.getElementById("feedback-panel");
+  const { data, error } = await supabaseClient
+    .from("feedback")
+    .select("id, message, status, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    panel.innerHTML = `<p class="error-text">Failed to load: ${escapeHtml(error.message)}</p>`;
+    return;
+  }
+
+  if (!data.length) {
+    panel.innerHTML = `<p class="hint">Nothing posted yet.</p>`;
+    return;
+  }
+
+  panel.innerHTML = data
+    .map(
+      (f) => `
+        <div class="manage-row" data-id="${f.id}">
+          <span class="feedback-status status-${f.status}">${f.status === "done" ? "Done" : "Open"}</span>
+          <div class="feedback-text">${escapeHtml(f.message)}</div>
+          <div class="hint">${relativeTime(new Date(f.created_at))}</div>
+          <div class="manage-row-actions">
+            <button class="fb-toggle">Mark ${f.status === "done" ? "Open" : "Done"}</button>
+            <button class="fb-delete">Delete</button>
+          </div>
+          <p class="error-text fb-error"></p>
+        </div>`,
+    )
+    .join("");
+
+  panel.querySelectorAll(".manage-row").forEach((row) => {
+    const id = row.dataset.id;
+    const currentStatus = row.querySelector(".feedback-status").classList.contains("status-done") ? "done" : "open";
+    row.querySelector(".fb-toggle").addEventListener("click", () => toggleFeedbackStatus(row, id, currentStatus));
+    row.querySelector(".fb-delete").addEventListener("click", () => deleteFeedback(row, id));
+  });
+}
+
+async function toggleFeedbackStatus(row, id, currentStatus) {
+  const nextStatus = currentStatus === "done" ? "open" : "done";
+  const { error } = await supabaseClient.from("feedback").update({ status: nextStatus }).eq("id", id);
+  if (error) {
+    row.querySelector(".fb-error").textContent = "Update failed: " + error.message;
+    return;
+  }
+  loadFeedbackPanel();
+}
+
+async function deleteFeedback(row, id) {
+  if (!confirm("Delete this entry? This can't be undone.")) return;
+  const { error } = await supabaseClient.from("feedback").delete().eq("id", id);
+  if (error) {
+    row.querySelector(".fb-error").textContent = "Delete failed: " + error.message;
+    return;
+  }
+  loadFeedbackPanel();
 }
