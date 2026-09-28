@@ -1,0 +1,32 @@
+name: Test group news coverage (diagnostic)
+
+on:
+  workflow_dispatch:
+    inputs:
+      group_match:
+        description: "Part of the group's name or key"
+        required: false
+        default: "generation"
+      extra_queries:
+        description: "Alternative queries, separated by |"
+        required: false
+        default: "\"Girls' Generation\" kpop|\"Girls' Generation\"|SNSD|\"Girls Generation\""
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python scripts/test_group_news_coverage.py
+        working-directory: .
+        env:
+          PYTHONPATH: scripts
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GROUP_MATCH: ${{ github.event.inputs.group_match }}
+          EXTRA_QUERIES: ${{ github.event.inputs.extra_queries }}
