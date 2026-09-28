@@ -315,3 +315,10 @@ form.stacked input {
   color: var(--accent);
   border-color: rgba(255, 92, 138, 0.35);
 }
+
+.mg-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 6px 0 2px;
+}

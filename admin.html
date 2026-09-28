@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>kpop-feeder admin</title>
-  <link rel="stylesheet" href="css/style.css?v=10" />
+  <link rel="stylesheet" href="css/style.css?v=11" />
 </head>
 <body>
   <div class="wrap">
@@ -29,6 +29,11 @@
         <button type="button" id="lookup-members-btn">Look up members (Wikipedia)</button>
         <p class="hint" id="lookup-status"></p>
         <p class="hint">Shown beside the group name on its page, and also used to widen Soompi matching.</p>
+      </div>
+      <div>
+        <label for="other-terms">Other search terms (comma-separated)</label>
+        <input type="text" id="other-terms" placeholder="e.g. SNSD, Girls' Generation" />
+        <p class="hint">Nicknames or other spellings. Used for matching news only, not shown on the group page.</p>
       </div>
       <button type="submit" class="primary">Add group</button>
       <p class="error-text" id="add-error"></p>
@@ -64,9 +69,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=10"></script>
-  <script src="js/supabase-client.js?v=10"></script>
-  <script src="js/wikipedia.js?v=10"></script>
-  <script src="js/admin.js?v=10"></script>
+  <script src="js/config.js?v=11"></script>
+  <script src="js/supabase-client.js?v=11"></script>
+  <script src="js/wikipedia.js?v=11"></script>
+  <script src="js/admin.js?v=11"></script>
 </body>
 </html>

@@ -62,6 +62,30 @@ function slugify(s) {
     .replace(/^-+|-+$/g, "");
 }
 
+function splitTerms(value) {
+  return value.split(",").map((t) => t.trim()).filter(Boolean);
+}
+
+// Case-insensitive de-dupe, keeping the first spelling.
+function uniqueTerms(terms) {
+  const seen = new Set();
+  return terms.filter((t) => {
+    const k = plainTerm(t).toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+// Regex groups store terms like "\bSKZ\b" -- this is the readable form.
+function plainTerm(p) {
+  return p.replace(/\\b/g, "").replace(/\\/g, "");
+}
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -75,11 +99,8 @@ document.getElementById("add-group-form").addEventListener("submit", async (e) =
 
   const displayName = displayNameEl.value.trim();
   const key = keyEl.value.trim();
-  const extraTerms = document
-    .getElementById("extra-terms")
-    .value.split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
+  const extraTerms = splitTerms(document.getElementById("extra-terms").value);
+  const otherTerms = splitTerms(document.getElementById("other-terms").value);
 
   if (!displayName || !key) {
     errorEl.textContent = "Group name and key are required.";
@@ -89,7 +110,7 @@ document.getElementById("add-group-form").addEventListener("submit", async (e) =
   const { error } = await supabaseClient.from("groups").insert({
     key,
     display_name: displayName,
-    search_patterns: [displayName, ...extraTerms],
+    search_patterns: uniqueTerms([displayName, ...extraTerms, ...otherTerms]),
     members: extraTerms,
     is_regex: false,
   });
@@ -202,7 +223,7 @@ async function loadManageGroups() {
   const container = document.getElementById("manage-groups");
   const { data: groups, error } = await supabaseClient
     .from("groups")
-    .select("key, display_name, members, search_patterns, last_refreshed_at")
+    .select("key, display_name, members, search_patterns, is_regex, last_refreshed_at")
     .order("display_name", { ascending: true });
 
   if (error || !groups) {
@@ -217,12 +238,21 @@ async function loadManageGroups() {
   container.innerHTML = groups
     .map((g, i) => {
       const membersStr = (g.members || []).join(", ");
+      // Everything in search_patterns that isn't the group name or a member.
+      const hidden = new Set([g.display_name, ...(g.members || [])].map((t) => plainTerm(t).toLowerCase()));
+      const otherStr = (g.search_patterns || [])
+        .map(plainTerm)
+        .filter((t) => !hidden.has(t.toLowerCase()))
+        .join(", ");
       const count = counts[i].count ?? 0;
       const lastRefreshed = g.last_refreshed_at ? relativeTime(new Date(g.last_refreshed_at)) : "never";
       return `
-        <div class="manage-row" data-key="${escapeHtml(g.key)}" data-patterns='${escapeHtml(JSON.stringify(g.search_patterns || []))}'>
+        <div class="manage-row" data-key="${escapeHtml(g.key)}" data-regex="${g.is_regex ? "1" : ""}" data-patterns='${escapeHtml(JSON.stringify(g.search_patterns || []))}'>
           <input type="text" class="mg-display-name" value="${escapeHtml(g.display_name)}" />
+          <label class="mg-label">Members (shown beside the group name)</label>
           <input type="text" class="mg-extra-terms" value="${escapeHtml(membersStr)}" placeholder="members, comma-separated" />
+          <label class="mg-label">Other search terms (not shown)</label>
+          <input type="text" class="mg-other-terms" value="${escapeHtml(otherStr)}" placeholder="e.g. nicknames, other spellings" />
           <div class="hint">${count} articles &middot; last refreshed ${lastRefreshed}</div>
           <div class="manage-row-actions">
             <button class="mg-save">Save</button>
@@ -245,29 +275,33 @@ async function saveGroup(row, key) {
   errorEl.textContent = "";
 
   const displayName = row.querySelector(".mg-display-name").value.trim();
-  const members = row
-    .querySelector(".mg-extra-terms")
-    .value.split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
+  const members = splitTerms(row.querySelector(".mg-extra-terms").value);
+  const otherTerms = splitTerms(row.querySelector(".mg-other-terms").value);
 
   if (!displayName) {
     errorEl.textContent = "Group name can't be empty.";
     return;
   }
 
-  // search_patterns is used for matching and may hold legacy aliases/
-  // regex fragments -- only add newly-typed members to it, never remove
-  // existing entries, so editing the members list here can't break
-  // matching that was already working.
+  // Search terms = group name + members + other terms. Existing entries
+  // that are still listed keep their stored form (regex groups store
+  // e.g. "\bSKZ\b"); terms removed from both boxes are dropped; new
+  // terms are added (word-bounded for regex groups).
   let existingPatterns = [];
   try {
     existingPatterns = JSON.parse(row.dataset.patterns || "[]");
   } catch {
-    existingPatterns = [displayName];
+    existingPatterns = [];
   }
-  const existingLower = new Set(existingPatterns.map((p) => p.toLowerCase()));
-  const mergedPatterns = [...existingPatterns, ...members.filter((m) => !existingLower.has(m.toLowerCase()))];
+  const wanted = uniqueTerms([displayName, ...members, ...otherTerms]);
+  const wantedLower = new Set(wanted.map((t) => t.toLowerCase()));
+  const kept = uniqueTerms(existingPatterns).filter((p) => wantedLower.has(plainTerm(p).toLowerCase()));
+  const keptLower = new Set(kept.map((p) => plainTerm(p).toLowerCase()));
+  const isRegex = row.dataset.regex === "1";
+  const added = wanted
+    .filter((t) => !keptLower.has(t.toLowerCase()))
+    .map((t) => (isRegex ? `\\b${escapeRegex(t)}\\b` : t));
+  const mergedPatterns = [...kept, ...added];
 
   const { error } = await supabaseClient
     .from("groups")

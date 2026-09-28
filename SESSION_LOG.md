@@ -181,3 +181,16 @@ collecting started 2026-09-26.
   KiiiKiii, TXT, aespa, TWICE, BABYMONSTER, IVE, ILLIT, Hearts2Hearts,
   Stray Kids, ITZY, NMIXX, LE SSERAFIM and KATSEYE all return members.
 - Admin page assets bumped to ?v=10.
+
+**Admin: separate "Other search terms" box (2026-09-28)**
+- Problem: the admin page had one box that fed both `members` (shown
+  beside the group name) and `search_patterns`, so nicknames like
+  "snsd, SNSD" showed up as members.
+- Add-group form and each Manage-groups row now have two boxes:
+  "Members (shown beside the group name)" and "Other search terms (not
+  shown)". Other terms go into `search_patterns` only; they also count
+  as group names for article-text filing.
+- Saving a row now rebuilds `search_patterns` = name + members + other
+  terms: entries still listed keep their stored form (e.g. `\bSKZ\b`),
+  entries removed from both boxes are dropped, new ones are added
+  (word-bounded for regex groups). Admin assets ?v=11.
