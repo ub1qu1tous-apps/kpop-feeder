@@ -1,0 +1,27 @@
+name: Add search terms to a group
+
+on:
+  workflow_dispatch:
+    inputs:
+      group_key:
+        description: "Group key (from the group page URL, ?g=...)"
+        required: true
+      terms:
+        description: "Terms to add, separated by |"
+        required: true
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests==2.32.3
+      - run: python scripts/add_search_terms.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GROUP_KEY: ${{ github.event.inputs.group_key }}
+          TERMS: ${{ github.event.inputs.terms }}
