@@ -4,22 +4,43 @@
 // callers should treat the result as a starting point to review/edit,
 // not a guaranteed-correct answer.
 
+const WIKI_API = "https://en.wikipedia.org/w/api.php?format=json&formatversion=2&origin=*";
+const MAX_PAGES_TO_CHECK = 3;
+
 async function lookupMembersFromWikipedia(groupName) {
-  const searchUrl =
-    "https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=1" +
-    `&srsearch=${encodeURIComponent(groupName + " kpop group")}`;
-  const searchResp = await fetch(searchUrl);
-  const searchData = await searchResp.json();
-  const title = searchData?.query?.search?.[0]?.title;
-  if (!title) return [];
+  // Search the plain name: adding words like "kpop group" pulls in the
+  // agency or a member's page ahead of the group's own page.
+  const searchData = await (
+    await fetch(`${WIKI_API}&action=query&list=search&srlimit=5&srsearch=${encodeURIComponent(groupName)}`)
+  ).json();
+  const titles = (searchData?.query?.search || []).map((s) => s.title);
 
-  const wikitextUrl =
-    "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main" +
-    `&format=json&origin=*&formatversion=2&titles=${encodeURIComponent(title)}`;
-  const wtResp = await fetch(wikitextUrl);
-  const wtData = await wtResp.json();
-  const wikitext = wtData?.query?.pages?.[0]?.revisions?.[0]?.slots?.main?.content || "";
+  // Check the page whose title matches the name first (e.g. "KiiiKiii",
+  // "Ive (group)"), then the rest in search order, until one has a
+  // members list in its infobox.
+  const want = normalizeTitle(groupName);
+  const ordered = [
+    ...titles.filter((t) => normalizeTitle(t) === want),
+    ...titles.filter((t) => normalizeTitle(t) !== want),
+  ];
 
+  for (const title of ordered.slice(0, MAX_PAGES_TO_CHECK)) {
+    const wtData = await (
+      await fetch(`${WIKI_API}&action=query&prop=revisions&rvprop=content&rvslots=main&titles=${encodeURIComponent(title)}`)
+    ).json();
+    const wikitext = wtData?.query?.pages?.[0]?.revisions?.[0]?.slots?.main?.content || "";
+    const members = parseInfoboxMembers(wikitext);
+    if (members.length) return members;
+  }
+  return [];
+}
+
+// "Ive (group)" -> "ive", "LE SSERAFIM" -> "lesserafim"
+function normalizeTitle(s) {
+  return s.toLowerCase().replace(/\(.*?\)/g, "").replace(/[^a-z0-9]/g, "");
+}
+
+function parseInfoboxMembers(wikitext) {
   const match = wikitext.match(/\|\s*(?:current_members|members)\s*=\s*([\s\S]*?)(?:\n\s*\||\n\}\})/);
   if (!match) return [];
 

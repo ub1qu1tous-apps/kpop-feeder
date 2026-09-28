@@ -1,32 +1,33 @@
-// Diagnostic only: shows what the admin page's "Look up members
-// (Wikipedia)" button sees for a few groups, to debug misses.
+// Diagnostic only: runs the admin page's "Look up members (Wikipedia)"
+// function (js/wikipedia.js, unchanged) for a list of groups.
 import fs from "node:fs";
 
 const realFetch = globalThis.fetch;
-globalThis.fetch = (url, opts = {}) =>
-  realFetch(url, { ...opts, headers: { "User-Agent": "kpop-feeder-diagnostic/1.0 (github actions)", ...(opts.headers || {}) } });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Load the same lookup function the admin page uses.
+// Wikipedia rate-limits shared CI IPs; space requests out and retry.
+globalThis.fetch = async (url, opts = {}) => {
+  for (let attempt = 0; ; attempt++) {
+    await sleep(1500);
+    const resp = await realFetch(url, {
+      ...opts,
+      headers: { "User-Agent": "kpop-feeder-diagnostic/1.0 (github actions)", ...(opts.headers || {}) },
+    });
+    const text = await resp.text();
+    if (text.startsWith("{") || attempt >= 3) return new Response(text, { status: resp.status });
+    console.log(`  (rate limited, retrying in ${5 * (attempt + 1)}s)`);
+    await sleep(5000 * (attempt + 1));
+  }
+};
+
 eval(fs.readFileSync("js/wikipedia.js", "utf8") + "\nglobalThis.lookupMembersFromWikipedia = lookupMembersFromWikipedia;");
 
-const api = "https://en.wikipedia.org/w/api.php?format=json&origin=*";
-const names = (process.env.NAMES || "KiiiKiii,aespa,ILLIT,Hearts2Hearts").split(",");
-
+const names = (process.env.NAMES || "KiiiKiii").split(",").map((s) => s.trim()).filter(Boolean);
 for (const name of names) {
-  console.log(`\n==================== ${name}`);
-  for (const q of [`${name} kpop group`, name]) {
-    const r = await (await fetch(`${api}&action=query&list=search&srlimit=5&srsearch=${encodeURIComponent(q)}`)).json();
-    console.log(`search "${q}": ` + (r?.query?.search || []).map((s) => s.title).join(" | "));
+  try {
+    const members = await lookupMembersFromWikipedia(name);
+    console.log(`${name}: ${members.length ? members.join(", ") : "NOT FOUND"}`);
+  } catch (e) {
+    console.log(`${name}: ERROR ${e.message}`);
   }
-  const top = (await (await fetch(`${api}&action=query&list=search&srlimit=1&srsearch=${encodeURIComponent(name)}`)).json())?.query?.search?.[0]?.title;
-  if (top) {
-    const wt = (await (await fetch(`${api}&action=query&prop=revisions&rvprop=content&rvslots=main&formatversion=2&titles=${encodeURIComponent(top)}`)).json())
-      ?.query?.pages?.[0]?.revisions?.[0]?.slots?.main?.content || "";
-    console.log(`page "${top}": ${wt.length} chars`);
-    const infobox = wt.match(/\|\s*(?:current_members|members|past_members)\s*=[^\n]*(\n[^|}][^\n]*)*/g);
-    console.log("infobox member fields:", JSON.stringify(infobox));
-    const sec = wt.match(/==+\s*Members\s*==+[\s\S]{0,800}/i);
-    console.log("Members section:", sec ? JSON.stringify(sec[0]) : "none");
-  }
-  console.log("lookupMembersFromWikipedia ->", JSON.stringify(await lookupMembersFromWikipedia(name)));
 }
