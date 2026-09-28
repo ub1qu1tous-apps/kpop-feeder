@@ -291,3 +291,25 @@ otherwise show a "Failed to load" error (table doesn't exist yet).
   bumped to `?v=13` (feedback page only).
 - User still needs to run `supabase/009_feedback_cap.sql` (008 alone
   leaves the old auto-delete-oldest behavior in place).
+
+**Confirmed live (2026-09-28):** user ran 008 and 009, pushed
+`feedback-board` straight to `main` (this repo's commits go directly to
+`main`, no PR), confirmed the button and posting work on the live
+GitHub Pages site.
+
+**Follow-up: URL key removed from the Add-group form**
+- The "Add a group" admin form showed an editable "URL key" field
+  (auto-filled from the group name, but editable) -- confusing, and it
+  had gone blank in a screenshot after a Wikipedia lookup. User asked
+  to remove it from the page entirely; still generate and store it, no
+  editing.
+- `admin.html`: dropped the "URL key" label/input.
+- `js/admin.js`: the add-group submit handler now computes
+  `key = slugify(displayName)` directly instead of reading a `key`
+  input; removed the now-unused manual-edit tracking. A duplicate slug
+  (Postgres unique-violation, code `23505`) now shows a plain-English
+  "a group with a matching name already exists" message instead of the
+  raw DB error, since the admin can no longer see/edit the key to work
+  around a collision. Assets bumped to `?v=13`.
+- Manage-groups rows never showed the key at all, so no change needed
+  there.

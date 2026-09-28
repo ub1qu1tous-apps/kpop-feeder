@@ -19,13 +19,6 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
 });
 
 const displayNameEl = document.getElementById("display-name");
-const keyEl = document.getElementById("key");
-let keyManuallyEdited = false;
-
-keyEl.addEventListener("input", () => (keyManuallyEdited = true));
-displayNameEl.addEventListener("input", () => {
-  if (!keyManuallyEdited) keyEl.value = slugify(displayNameEl.value);
-});
 
 document.getElementById("lookup-members-btn").addEventListener("click", async () => {
   const btn = document.getElementById("lookup-members-btn");
@@ -99,12 +92,12 @@ document.getElementById("add-group-form").addEventListener("submit", async (e) =
   successEl.textContent = "";
 
   const displayName = displayNameEl.value.trim();
-  const key = keyEl.value.trim();
+  const key = slugify(displayName);
   const extraTerms = splitTerms(document.getElementById("extra-terms").value);
   const otherTerms = splitTerms(document.getElementById("other-terms").value);
 
   if (!displayName || !key) {
-    errorEl.textContent = "Group name and key are required.";
+    errorEl.textContent = "Group name is required.";
     return;
   }
 
@@ -117,13 +110,15 @@ document.getElementById("add-group-form").addEventListener("submit", async (e) =
   });
 
   if (error) {
-    errorEl.textContent = "Failed to add group: " + error.message;
+    errorEl.textContent =
+      error.code === "23505"
+        ? `A group with a matching name already exists (URL key "${key}" is taken) -- pick a different name.`
+        : "Failed to add group: " + error.message;
     return;
   }
 
   successEl.textContent = `Added "${displayName}". It'll start picking up articles on the next fetch.`;
   e.target.reset();
-  keyManuallyEdited = false;
   loadManageGroups();
 });
 
