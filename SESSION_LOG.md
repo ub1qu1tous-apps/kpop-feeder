@@ -200,3 +200,14 @@ collecting started 2026-09-26.
   the header at top-right, flush with the right column of group
   buttons, muted colour at 55% opacity, brightens on hover. Confirmed
   by the user on laptop. Assets ?v=9 (index/group/login).
+
+**Girls' Generation low coverage (2026-09-28)**
+- Diagnostic (`test-group-news-coverage` workflow): the group was saved
+  as "Girl's Generation" (misplaced apostrophe). Google for that exact
+  phrase: 2 results since the cutoff; for "Girls' Generation": 86.
+  Bing returned 0 for any quoted name with an apostrophe, 5 without.
+- Code fixes: title and article-text matching now treat straight and
+  curly apostrophes (' ’ ‘) as the same (`article_text.literal_pattern`,
+  used by `compile_matcher` too); the Bing query drops apostrophes from
+  the group name. User to rename the group to "Girls' Generation" in
+  admin.

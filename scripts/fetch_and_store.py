@@ -79,7 +79,7 @@ def compile_matcher(group):
     if group.get("is_regex"):
         combined = "|".join(patterns)
     else:
-        combined = "|".join(rf"\b{re.escape(p)}\b" for p in patterns)
+        combined = "|".join(article_text.literal_pattern(p) for p in patterns)
     return re.compile(combined, re.IGNORECASE)
 
 
@@ -287,10 +287,14 @@ def main():
             if matcher.search(item["raw_title"]):
                 candidates_by_group[key].append(to_candidate(item))
 
-        query = quote(f'"{group["display_name"]}" kpop')
+        name = group["display_name"]
+        google_query = quote(f'"{name}" kpop')
+        # Bing News returns nothing for quoted names containing an
+        # apostrophe ("Girls' Generation"), but finds them without it.
+        bing_query = quote(f'"{article_text.APOSTROPHE_RE.sub("", name)}" kpop')
         for source, url in [
-            ("google_news", f"https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"),
-            ("bing_news", f"https://www.bing.com/news/search?q={query}&format=RSS"),
+            ("google_news", f"https://news.google.com/rss/search?q={google_query}&hl=en-US&gl=US&ceid=US:en"),
+            ("bing_news", f"https://www.bing.com/news/search?q={bing_query}&format=RSS"),
         ]:
             for e in fetch_feed(url)[:20]:
                 item = make_item(source, e)

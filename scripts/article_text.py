@@ -33,6 +33,8 @@ READ_WORKERS = 8
 COMMON_WORD_NAMES = {"twice", "ive", "seventeen", "treasure", "winner"}
 
 TAG_RE = re.compile(r"<[^>]+>")
+APOSTROPHE_RE = re.compile("['\u2019\u2018]")
+ANY_APOSTROPHE = "['\u2019\u2018]"
 
 # Google News decoding goes one at a time so we don't get rate limited;
 # publisher pages are fetched in parallel.
@@ -138,6 +140,14 @@ def searchable_text(title, row):
 
 # ---------------------------------------------------------------- matching
 
+def literal_pattern(term):
+    """Word-bounded regex for a plain search term. Any apostrophe style
+    matches any other: headlines often write "Girls\u2019 Generation"
+    (curly) where the stored name has a straight "'"."""
+    escaped = APOSTROPHE_RE.sub(lambda _: ANY_APOSTROPHE, re.escape(term))
+    return rf"\b{escaped}\b"
+
+
 def group_name_aliases(group):
     """search_patterns minus member names -> just the group's own names.
     Returns {alias: is_regex}."""
@@ -160,9 +170,9 @@ def compile_name_matcher(group):
             if is_regex:
                 capitalised.append(alias)
             else:
-                capitalised.extend(rf"\b{re.escape(v)}\b" for v in {alias, alias.upper(), alias.title()})
+                capitalised.extend(literal_pattern(v) for v in {alias, alias.upper(), alias.title()})
         else:
-            any_case.append(alias if is_regex else rf"\b{re.escape(alias)}\b")
+            any_case.append(alias if is_regex else literal_pattern(alias))
 
     rx_any = re.compile("|".join(any_case), re.IGNORECASE) if any_case else None
     rx_cap = re.compile("|".join(capitalised)) if capitalised else None
