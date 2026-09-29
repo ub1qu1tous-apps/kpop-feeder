@@ -27,6 +27,9 @@ confirmed.
 Known short forms:
 - u = you
 - yr = your
+- r = are
+- wat = what
+- tis = this
 
 ## Free tools first
 Any recommendation involving external software should be free to use
