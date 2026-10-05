@@ -101,8 +101,26 @@ def fetch_existing_titles(group_key):
     return [row["title"] for row in resp.json()]
 
 
+FEED_TIMEOUT = 20  # seconds
+
+
 def fetch_feed(url):
-    parsed = feedparser.parse(url)
+    """Fetch and parse one RSS feed.
+
+    Deliberately not feedparser.parse(url) -- that has no timeout of its
+    own, and a feed server that hangs instead of erroring blocks forever
+    (this stalled a whole run for 15 minutes on 2026-10-05 until it was
+    cancelled). Fetching the bytes ourselves bounds it to FEED_TIMEOUT;
+    a slow or failing source is logged and skipped rather than taking
+    the rest of the run down with it.
+    """
+    try:
+        resp = requests.get(url, timeout=FEED_TIMEOUT, headers={"User-Agent": article_text.BROWSER_UA})
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        print(f"  (feed fetch failed, skipping -- {url}: {exc})")
+        return []
+    parsed = feedparser.parse(resp.content)
     if parsed.bozo and not parsed.entries:
         return []
     return parsed.entries

@@ -13,6 +13,11 @@ on:
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    # Backstop: normal runs finish in well under 2 minutes. If something
+    # hangs again (a feed/site that doesn't respond, despite the request
+    # timeouts in the script), this kills the run instead of it sitting
+    # there indefinitely until someone notices and cancels it by hand.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
