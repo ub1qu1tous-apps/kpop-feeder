@@ -420,3 +420,35 @@ per group (BABYMONSTER +22, NMIXX +20, ITZY +22, IVE +18, Stray Kids
 next breaking transitive-dependency release surfaces on a PR/push
 rather than silently failing the schedule for ~33h before anyone
 notices) -- raised as an option, not asked for yet.
+
+**Follow-up (same day): a second, different fetch failure -- a hang, not a crash**
+
+- User reported the fetch failed again. This one was NOT the selectolax
+  issue (the real scheduled run in between had succeeded fine) -- a
+  manually-triggered run instead ran for 15 minutes and ended
+  `cancelled`, not `failure`. GitHub doesn't keep logs for a cancelled
+  job, so the exact line wasn't visible, but every other run in the
+  history (including the one right before and after it) finished in
+  20-90s, so 15 minutes was a clear outlier.
+- Code audit found the one unbounded network call in the whole
+  pipeline: `fetch_feed()` called `feedparser.parse(url)` directly,
+  which has no timeout of its own -- if Google News/Bing/Soompi ever
+  hangs instead of erroring, Python blocks with nothing to stop it.
+  Every other network call already had an explicit `timeout=`.
+- Fix: `fetch_feed()` now does `requests.get(url, timeout=20, ...)`
+  itself and hands the bytes to `feedparser.parse()`, instead of
+  `feedparser.parse(url)` doing its own unbounded fetch. A failing or
+  slow source is caught, logged, and skipped (one bad feed no longer
+  takes the whole run down). Added `timeout-minutes: 15` on the GitHub
+  Actions job as a backstop in case something else ever hangs.
+- Verified against a local fake HTTP server (good feed / 500 error /
+  hanging connection) before pushing: parses normally, catches and
+  skips the error, and the hang times out at the bound instead of
+  blocking (tested with a 2s override so the test itself stayed fast).
+  Pushed, then manually triggered the real workflow to confirm against
+  production: finished in 74s (normal range), all 15 groups fetched
+  cleanly, 19-26 new rows each, no feed needed the new skip path this
+  run.
+- Noticed in passing, not investigated: a 15th group "Enhypen" is now
+  tracked that wasn't in this log before -- presumably added via admin
+  in between sessions.
