@@ -2,3 +2,7 @@ feedparser==6.0.11
 requests==2.32.3
 trafilatura==2.2.0
 googlenewsdecoder==0.2.1
+# selectolax 1.0 (2026-10-04) dropped the "Modest" backend that
+# googlenewsdecoder==0.2.1 imports at load time -- pin below it until
+# googlenewsdecoder ships a release that supports the new lexbor backend.
+selectolax<1.0
