@@ -389,3 +389,34 @@ GitHub Pages site.
   logo, which is index.html only, the favicon is tab-wide so it went on
   every page. Assets bumped per-page to match each page's existing
   version.
+
+## 2026-10-05 — Scheduled fetch outage: unpinned transitive dependency
+
+**Symptom:** user asked why the scheduled fetch failed. 3 scheduled
+runs in a row had failed (Oct 4 03:05, Oct 4 18:11 x2, Oct 5 00:11),
+each dying in ~12s -- a crash on startup, not a mid-run failure. No new
+articles since the last success, Oct 3 14:53 (~33h gap).
+
+**Root cause:** `requirements.txt` pins `googlenewsdecoder==0.2.1` but
+not its dependency `selectolax`, so every run installed whatever was
+latest. `selectolax` shipped a breaking 1.0.0 release on Oct 4 that
+removed the "Modest" HTML backend; `googlenewsdecoder==0.2.1` imports
+that backend at module load time (`from selectolax.parser import
+HTMLParser`), so just `import article_text` at the top of
+`fetch_and_store.py` crashed before fetching anything.
+
+**Fix:** pinned `selectolax<1.0` in `requirements.txt`. Verified in an
+isolated local venv (pypi.org isn't blocked by this environment's
+network policy, only Supabase/jsdelivr are) that it resolves to
+`selectolax==0.4.13` and the import chain that was crashing now
+succeeds; `fetch_and_store.py` only fails locally past that point for
+the expected reason (no `SUPABASE_URL` env var here). Pushed, then
+manually triggered the workflow to confirm against the real backend:
+ran clean in ~61s (vs ~12s dying before), genuinely inserted new rows
+per group (BABYMONSTER +22, NMIXX +20, ITZY +22, IVE +18, Stray Kids
++21, TXT +21, ...). Scheduled fetch is healthy again.
+
+**Not done:** the earlier suggestion of a cheap CI import-check (so the
+next breaking transitive-dependency release surfaces on a PR/push
+rather than silently failing the schedule for ~33h before anyone
+notices) -- raised as an option, not asked for yet.
